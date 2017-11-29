@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>나의 메모</title>
+
+  </head>
+  <body>
+    <h2>가입 양식 작성하기</h2>
+    <form method="post" action="/join">
+      아이디 : <input type="text" name="member_id" /><br>
+      비밀번호 : <input type="password" name="pwd" /><br>
+      이름 : <input type="text" name="member_name" /><br>
+      성별 : <input type="radio" name="sex" value="male" /> 남 <input type="radio" name="sex" value="female" /> 여 <br>
+      생년월일 : <input type="date" name="birth" /><br>
+      연락처 : <input type="text" name="phone" /><br>
+      이메일 : <input type="text" name="email" /><br>
+      자기소개 : <textarea name="content" cols="40" rows="5" /> </textarea> <br>
+      프로필 사진 : <input type="file" name="photo" /><br><br>
+      <input type="submit" value="저장" name="" />
+    </form>
+  </body>
+</html>
