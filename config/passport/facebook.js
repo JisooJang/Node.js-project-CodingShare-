@@ -18,6 +18,9 @@ module.exports = function(app, passport) {
         };
 
         console.log('user.name : ' + user.name + ' user.email : ' + user.email);
+
+        done(null, user);
+        
         /*
         var database = app.get('database');
         database.userModel.load(options, function(err, user) {

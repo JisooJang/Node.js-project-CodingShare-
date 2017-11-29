@@ -35,9 +35,19 @@ var passport = require('passport');
 var facebook = require('./config/passport/facebook.js');
 var naver = require('./config/passport/naver.js');
 
+app.use(passport.initialize());   // 패스포트 초기화
+app.use(passport.session());  // 패스포트 로그인 세션 유지
 
 passport.use('facebook', facebook(app, passport));
 passport.use('naver', naver(app, passport));
+
+passport.serializeUser(function(user, done) {   // 사용자 정보를 세션에 저장
+  done(null, user.ud);
+});
+
+passport.deserializeUser(function(id, done) {   // 세션으로부터 사용자 정보 복원
+  done(null, user);
+});
 
 
 app.use(bodyParser.urlencoded({ extended: false }));    // body-parser를 사용해 application/x-www-form-urlencoded 파싱
@@ -296,7 +306,8 @@ router.route('/auth/facebook').get(passport.authenticate('facebook')
 
 router.route('/auth/facebook/callback').get(passport.authenticate('facebook',{
   successRedirect : '/',
-  failureRedirect : '/login'
+  failureRedirect : '/login',
+  session: false  // 추후 삭제할것. 세션 저장 필수
 }));
 
 router.route('/auth/naver').get(passport.authenticate('naver')
@@ -304,7 +315,8 @@ router.route('/auth/naver').get(passport.authenticate('naver')
 
 router.route('/auth/naver/callback').get(passport.authenticate('naver', {
   successRedirect : '/',
-  failureRedirect : '/login'
+  failureRedirect : '/login',
+  session: false  // 추후 삭제할것. 세션 저장 필수
 }));
 
 

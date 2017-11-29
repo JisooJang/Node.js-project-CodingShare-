@@ -21,6 +21,7 @@ module.exports = function(app, passport) {
 
         console.log('user.auth_id: ' + user.auth_id + ' user.auth_name: ' + user.auth_name + ' user.auth_email: ' + user.auth_email);
 
+        done(null, user);
 
         /*
         var database = app.get('database');
