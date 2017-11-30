@@ -38,6 +38,8 @@ var naver = require('./config/passport/naver.js');
 
 var io = require('socket.io').listen(server);
 
+var shortid = require('shortid'); // 랜덤URL 생성 모듈
+
 var database; // 데이터베이스 객체를 위한 변수
 var UserSchema; // 데이터베이스 스키마 객체를 위한 변수
 var UserModel;  // 데이터베이스 모델 객체를 위한 변순
@@ -338,6 +340,12 @@ failureRedirect : '/login',
 session: false  // 추후 삭제할것. 세션 저장 필수
 }));
 
+
+router.route('/make_rooms').get(function(req, res) {
+  var room_id = shortid.generate(); // 중복값 체크 필요한지 알아볼것
+  res.redirect('http://127.0.0.1:3500/shareRoom/' + room_id); 
+});
+
 // 코딩쉐어 텍스트 편집방에 들어올 때
 router.route('/shareRoom/:room_id').get(function(req, res){
 roomName = req.params.room_id;
@@ -353,6 +361,7 @@ fs.readFile('./public/subIndex.html', "utf-8", function(error, data) {
 router.route('/').get(function(req, res) {
   res.redirect('http://127.0.0.1:3500/public/index.html');
 });
+
 
 // 3500번 포트에 웹서버 시작
 server.listen(3500, function() {
