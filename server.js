@@ -1,11 +1,12 @@
 // Express 기본 모듈 불러오기
-var express = require('express')
-  , http = require('http')
-  , path = require('path');
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
+var path = require('path');
 
 // Express의 미들웨어 불러오기
 var bodyParser = require('body-parser')
-  , static = require('serve-static');
+var static = require('serve-static');
 var cookieParser = require('cookie-parser');
 var expressSession = require('express-session');        // 세션정보는 메모리에 저장
 
@@ -23,7 +24,25 @@ var cors = require('cors'); // 클라이언트에서 ajax로 요청햇을 때 �
 // 몽고디비 모듈 사용
 var MongoClient = require('mongodb').MongoClient;
 
-var app = express();
+
+var io = require('socket.io').listen(server);
+//var socket = require('./socket.js');
+
+//app.io.sockets.on('connection', socket());
+
+io.on('connection', function(socket) {
+  console.log("소켓 연결됨.");
+  
+  var roomName = null;
+  socket.on("send", function(data) {    // 소켓에 "send" 이벤트 연결
+  id = socket.id;
+  console.log('socket.id : ' + id);
+  console.log('Client send Data : ' + data);
+  
+  socket.broadcast.emit('get', data);   // 브로드캐스트 통신
+  });
+});
+
 
 var multer = require('multer'); // 파일업로드 모듈
 var fs = require('fs');
@@ -35,6 +54,7 @@ var passport = require('passport');
 var facebook = require('./config/passport/facebook.js');
 var naver = require('./config/passport/naver.js');
 
+/*
 app.use(passport.initialize());   // 패스포트 초기화
 app.use(passport.session());  // 패스포트 로그인 세션 유지
 
@@ -329,9 +349,12 @@ app.use('/', router);
 app.use(expressErrorHandler.httpError(404));
 
 app.use(errorHandler);
+*/
 
+app.use('/public', static(path.join(__dirname, 'public')));
 // 3500번 포트에 웹서버 시작
-app.listen(3500, function() {
+server.listen(3500, function() {
   console.log('Server starting...');
-  connectDB();  // DB 연결 메소드 호출
+  //connectDB();  // DB 연결 메소드 호출
 });
+

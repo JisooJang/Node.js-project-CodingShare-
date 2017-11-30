@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <style>
+
+
+    #editor{
+      width: 100%;
+      height: 500px;
+      border: 1px solid black;
+      overflow: scroll;
+      box-sizing: border-box;
+    }
+
+    #editor body{
+      margin: 0;
+    }
+    #monitor{
+      border: 1px solid black;
+      box-sizing: border-box;
+    }
+  </style>
+  <body>
+    <iframe id="editor" name="editor"></iframe>
+    <button type="button" class="emit">EMIT</button>
+  </body>
+</html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+
+<script>
+  var socket = io.connect(); //소켓 연결
+  var isPress = false;
+  var lastVal = $(editor.document.body).html();
+
+
+  //iframe 디자인
+  editor.document.designMode = "on";
+  editor.document.body.style = 'margin : 0'
+
+  $('.emit').on('click',function(){
+    console.log('누름');
+    socket.emit('send',$(editor.document.body).html());
+  });
+
+  $(editor.document).on({
+    "keypress" : function(){
+      isPress = true;
+    },
+    "keyup" : function(e){
+      var temp = $(editor.document.body).html();
+      var regexp =/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
+
+      if(isPress){
+        socket.emit('send',$(editor.document.body).html());
+        console.log("키업");
+        isPress = false;
+      }
+
+      console.log("temp : " + temp);
+      if(regexp.test(temp.replace("</div>","")) && lastVal != $(editor.document.body).html() &&  e.keyCode != 8){
+        socket.emit('send',$(editor.document.body).html());
+        lastVal = $(editor.document.body).html();
+        console.log("한글");
+      }
+
+      if(e.keyCode == 8){
+        socket.emit('send',$(editor.document.body).html());
+        console.log("백스페이스");
+      }
+
+      isPress = false;
+    }
+  });
+
+  socket.on('get',function(data){
+    console.log(data);
+    $(editor.document.body).html(data);
+  });
+
+</script>
