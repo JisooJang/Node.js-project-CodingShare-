@@ -55,7 +55,7 @@
       var regexp =/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
 
       if(isPress){
-        socket.emit('send',$(editor.document.body).html());
+        socket.emit('send', $(editor.document.body).html());
         console.log("키업");
         isPress = false;
       }
