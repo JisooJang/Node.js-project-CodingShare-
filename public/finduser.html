@@ -23,7 +23,7 @@
           */
         $('#search_btn2').click(function(e) {
           $.ajax({
-            url: '/process/finduser',
+            url: '/finduser',
             type: 'post',
             data: {
               search_option: $('#search_option').val(),
@@ -32,7 +32,11 @@
             success: function(data) {  // 응답 성공시 실행되는 콜백 함수
               var output = '<div>';
               var json = $(data).each(function (index, item) {
-                    output += '<ul>' + (index + 1) + '. 아이디 - ' + item.id + '<br> 이름 - ' + item.name + '<br> 연락처 - '
+                var go = function() {
+                  return item.id;
+                }
+                    output += '<ul>' + (index + 1) + '. 아이디 - ' + item.id + '<a id="friend_add" href="/addFriend/' + item.id + '">친구추가</a>'
+                       + '<br> 이름 - ' + item.name + '<br> 연락처 - '
                      + item.phone + '<br> 생년월일 - ' + item.birth + '</ul>';
                   });
                   output += '</div>';

@@ -46,6 +46,13 @@ var UserModel;  // 데이터베이스 모델 객체를 위한 변순
 
 var roomName;
 
+app.use(expressSession({    // 세션 객체 호출 시 반환되는 객체 전달
+  secret: 'abc123',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 60000 }
+}));
+
 app.use(bodyParser.urlencoded({ extended: false }));    // body-parser를 사용해 application/x-www-form-urlencoded 파싱
 app.use(bodyParser.json());   // application/json 파싱
 
@@ -57,11 +64,6 @@ app.use(expressErrorHandler.httpError(404));
 app.use(errorHandler);
 
 app.use(cookieParser());
-app.use(expressSession({    // 세션 객체 호출 시 반환되는 객체 전달
-  secret: 'my key',
-  resave: false,
-  saveUninitialized: true
-}));
 
 app.use(passport.initialize());   // 패스포트 초기화
 app.use(passport.session());  // 패스포트 로그인 세션 유지
@@ -185,6 +187,66 @@ var findUser = function(database, value, search_option, callback) {
 
 };
 
+var addFriend = function(database, user_id, friend_id, callback) {
+  console.log('addFriend 호출됨.');
+
+  var friend = database.collection('friend');
+  if(user_id == friend_id) {
+    console.log('본인 자신을 친추할 수 없습니다.');
+    res.send('본인 자신을 친추할 수 없습니다.');
+  }
+  
+  friend.find({"id": user_id, "friend_id" : friend_id}).toArray(function(err, docs) {
+    if(err) {
+      callback(err, null);
+      return;
+    }
+    if(docs.length > 0) {
+      console.log('이미 친구 추가가 되어있는 회원입니다.');
+      callback(null, null);
+      return;
+    }
+    else {
+       // friend 테이블에서 이미 존재하는 검색결과가 존재하지 않을 때 db에 추가
+      friend.insertMany([{"id":user_id, "friend_id":friend_id }], function(err2, result) {
+      if(err2) {
+        callback(err2, null);
+        return;
+      }
+
+      if(result.insertCount > 0) {
+        console.log('사용자 레코드 추가됨 : ' + result.insertedCount);
+      } else {
+        console.log('추가된 레코드가 없음.');
+      }
+
+      callback(null, result);
+      });
+    }
+  });
+    
+};
+
+
+var viewFriends = function(database, user_id, callback) {
+  console.log('viewFriends 호출됨.');
+  var friend = database.collection('friend');   //db에서 friend 이름의 컬렉션을 가져온다.
+
+  friend.find({ "id": user_id }).toArray(function(err, docs) {
+    if(err) {
+      callback(err, null);    // 콜백함수에 err객체와 null값을 보냄
+      return;
+    }
+
+    if(docs.length > 0) {
+      console.log("사용자 찾음");
+      callback(null, docs);   // 콜백함수에 db 검색결과인 docs배열을 전달
+    } else {
+      console.log('일치하는 사용자 찾지 못함.');
+      callback(null, null);
+    }
+  });
+}
 
 router.route('/join').post(function(req, res) {
   var paramId = req.body.member_id;
@@ -225,19 +287,22 @@ router.route('/join').post(function(req, res) {
 
 // 로그인 라우팅 함수
 router.route('/login').post(function(req, res) {
-
   var paramId = req.body.id;
   var paramPassword = req.body.password;
 
   console.log(paramId + ', ' + paramPassword);
 
+  if(req.session.user) {
+    console.log('이미 로그인되어있습니다.');
+    res.send('<h2>이미 로그인되어있습니다.</h2>');
+  }
+  else {
   if(database) {
     authUser(database, paramId, paramPassword, function(err, docs) {
       if(err) { throw err; }
       if(docs) {
         console.dir(docs);
         var username = docs[0].name;
-
         req.session.user = {
             id: paramId,
             name: username,
@@ -266,6 +331,7 @@ router.route('/login').post(function(req, res) {
     res.write("<br><br><a href='/public/login.html'>다시 로그인하기</a>");
     res.end();
   }
+}
 });
 
 router.route('/logout').get(function(req, res) {
@@ -347,14 +413,65 @@ router.route('/make_rooms').get(function(req, res) {
 });
 
 // 코딩쉐어 텍스트 편집방에 들어올 때
-router.route('/shareRoom/:room_id').get(function(req, res){
+router.route('/shareRoom/:room_id').get(function(req, res) {
 roomName = req.params.room_id;
 
-fs.readFile('./public/subIndex.html', "utf-8", function(error, data) {
-  if(error) console.log(error.message);
-  res.writeHead(200, {'Content-Type' : 'text/html'});
-  res.end(data);
+  fs.readFile('./public/subIndex.html', "utf-8", function(error, data) {
+    if(error) console.log(error.message);
+    res.writeHead(200, {'Content-Type' : 'text/html'});
+    res.end(data);
+  });
 });
+
+// 친구추가 버튼을 눌렀을 때
+router.route('/addFriend/:id').get(function(req, res) {
+  var friend_id = req.params.id;
+  
+  if(req.session.user) {
+    if(database) {
+      // 디비에 친구 추가
+      addFriend(database, req.session.user.id, friend_id, function(err, docs) {
+        if(err) { throw err; }
+        if(docs) {
+          console.log(docs);
+          res.send(docs);
+        }
+        else { 
+          res.send("이미 친구추가가 되어있는 회원입니다.");
+        }
+      });
+    } else {
+      console.log('데이터베이스 접속 오류');
+    }
+  } else {
+    console.log('로그인 세션 필요');
+    //로그인 페이지로 이동, 로그인 후 친구추가 요청 처리할 것.
+    res.redirect('http://127.0.0.1:3500/public/login.html');
+  }
+});
+
+router.route('/viewFriends').get(function(req, res) {
+  if(req.session.user) {
+    if(database) {
+      viewFriends(database, req.session.user.id, function(err, docs) {
+        if(err) { throw err; }
+        if(docs) {
+          console.log(docs);
+          res.send(docs); // 디비 검색 결과(배열)을 응답객체로 보냄
+        }
+        else { 
+          res.send("친구 레코드 검색 오류");
+        }
+      });
+    } else {
+      console.log('데이터베이스 오류');
+      res.send('<h2>데이터베이스 오류</h2>');
+    }
+  } else {
+    console.log('로그인 세션 필요');
+    res.redirect('http://127.0.0.1/login');
+    // 로그인 후 페이지 요청을 /viewFriends로 다시 넘겨줄 것
+  }
 });
 
 
@@ -366,6 +483,6 @@ router.route('/').get(function(req, res) {
 // 3500번 포트에 웹서버 시작
 server.listen(3500, function() {
   console.log('Server starting...');
-  //connectDB();  // DB 연결 메소드 호출
+  connectDB();  // DB 연결 메소드 호출
 });
 
