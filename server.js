@@ -7,7 +7,7 @@ var path = require('path');
 var router = express.Router();
 
 // Express의 미들웨어 불러오기
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser'), static = require('serve-static');
 var static = require('serve-static');
 var cookieParser = require('cookie-parser');
 var expressSession = require('express-session');        // 세션정보는 메모리에 저장
@@ -27,6 +27,7 @@ var cors = require('cors'); // 클라이언트에서 ajax로 요청햇을 때 �
 var MongoClient = require('mongodb').MongoClient;
 
 var multer = require('multer'); // 파일업로드 모듈
+
 var fs = require('fs');
 
 var mongoose = require('mongoose');   // 자바스크립트 객체와 데이터베이스 객체를 매핑시키는 모듈
@@ -80,6 +81,26 @@ passport.deserializeUser(function(id, done) {   // 세션으로부터 사용자 
   done(null, user);
 });
 
+// multer 미들웨어 사용
+var storage = multer.diskStorage({
+  destination: function (req, file, callback) {   // 업로드한 파일이 저장될 폴더를 지정
+    callback(null, 'uploads');
+  },
+  filename: function (req, file, callback) {    // 업로드한 파일의 이름을 바꿈
+    callback(null, req.session.user.id + '_' + Date.now() + '_' + file.originalname);
+  }
+});
+
+// 파일 제한 : 10개, 1G
+var upload = multer({
+  storage: storage,
+  limits: {   // 파일 크기 및 개수 등의 제한 속성 설정
+    files: 10,
+    fileSize: 1024 * 1024 * 1024
+  }
+});
+
+
 io.on('connection', function(socket) {
   console.log("소켓 연결됨.");
   console.log('room Name : ' + roomName);
@@ -89,8 +110,22 @@ io.on('connection', function(socket) {
   id = socket.id;
   console.log('Data : ' + data);
 
+  var client_info = {
+    socket_id: id,
+    contents: data.contents,
+    cursor: data.cursor
+  };
+
   //socket.broadcast.emit('get', data);   // 브로드캐스트 통신
-  socket.in(roomName).emit('get', data);
+  socket.in(roomName).emit('get', client_info);   // 참여중인 방에 소켓 데이터 전송
+  });
+
+  socket.on('chat', function(data) {    // 코드공유 페이지 내 멤버 채팅 이벤트 처리
+    console.log('room Name : ' + roomName);
+    console.log('Data : ' + data);
+
+    socket.in(roomName).emit('chat_get', data);
+
   });
 });
 
@@ -415,12 +450,19 @@ router.route('/make_rooms').get(function(req, res) {
 // 코딩쉐어 텍스트 편집방에 들어올 때
 router.route('/shareRoom/:room_id').get(function(req, res) {
 roomName = req.params.room_id;
-
+  /*
   fs.readFile('./public/subIndex.html', "utf-8", function(error, data) {
     if(error) console.log(error.message);
     res.writeHead(200, {'Content-Type' : 'text/html'});
     res.end(data);
   });
+  */
+  fs.readFile('./public/chat_index.html', "utf-8", function(error, data) {
+    if(error) console.log(error.message);
+    res.writeHead(200, {'Content-Type' : 'text/html'});
+    res.end(data);
+  });
+
 });
 
 // 친구추가 버튼을 눌렀을 때
@@ -450,6 +492,7 @@ router.route('/addFriend/:id').get(function(req, res) {
   }
 });
 
+// 등록된 친구 목록 확인
 router.route('/viewFriends').get(function(req, res) {
   if(req.session.user) {
     if(database) {
@@ -474,6 +517,66 @@ router.route('/viewFriends').get(function(req, res) {
   }
 });
 
+// 사용자 프로필 사진 설정
+router.route('/setImage').post(upload.array('photo', 1), function(req, res) {
+  var files = req.files;
+  console.log('files : ' + files);
+
+  if(req.session.user) {
+  try {
+    console.dir('#===== 업로드된 파일 정보 =====#');
+    console.dir(req.files[0]);
+    console.dir('#=====#');
+
+    var originalname = '',
+    filename = '',
+    mimetype = '',
+    size = 0;
+
+    if(Array.isArray(files)){
+      console.log('배열에 들어있는 파일 갯수 : %d ', files.length);
+
+      for(var index = 0; index < files.length; index++) {
+        originalname = files[index].originalname;
+        filename = files[index].filename;
+        mimetype = files[index].mimetype;
+        size = files[index].size;
+      }
+    } else {
+      console.log('파일 갯수 : 1');
+
+      originalname = files[0].originalname;
+      filename = files[0].filename;
+      mimetype = files[0].mimetype;
+      size = files[0].size;
+    }
+
+    console.log('현재 파일 정보 : ' + originalname + ', ' + filename, + ', ' + mimetype + ', ' + size);
+
+    if(database) {
+      var img_url = "http://127.0.0.1:3500/uploads/" + filename;
+      // 세션에서 회원아이디를 가져온 후, 프로필이미지 url db에 저장 
+      var users = database.collection('users2');
+      users.update({ "id": req.session.user.id }, {$set: { "profile_image": img_url }}, function(err, docs) {
+        if(err) { throw err; }
+        if(docs) {
+          console.log(docs);
+          res.send(docs);
+        }
+        else { 
+          res.send("프로필 이미지 설정 오류");
+        }
+      });
+    }
+
+  } catch(err) {
+    console.dir(err.stack);
+  }
+} else {
+  console.log('로그인 후 이용하세요');
+  res.redirect('http://127.0.0.1:3500/login');  // 로그인 후 프로필설정 페이지로 다시 요청해줄것
+}
+});
 
 router.route('/').get(function(req, res) {
   res.redirect('http://127.0.0.1:3500/public/index.html');
