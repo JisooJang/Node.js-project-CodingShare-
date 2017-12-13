@@ -32,6 +32,8 @@ var fs = require('fs');
 
 var mongoose = require('mongoose');   // 자바스크립트 객체와 데이터베이스 객체를 매핑시키는 모듈
 
+var nodemailer = require('nodemailer');
+
 var passport = require('passport');
 
 var facebook = require('./config/passport/facebook.js');
@@ -127,6 +129,11 @@ io.on('connection', function(socket) {
     socket.in(roomName).emit('chat_get', data);
 
   });
+
+  socket.on('addFriend', function(data) {   //친구추가 버튼 클릭시, 상대방에게 실시간 요청 알림
+    console.log('Data : ' + data);  //data에는 친구의 id를 포함해야함.
+    socket.emit('alert_addFried', data);  // 친구의 id에게만 전송해야함.
+  });
 });
 
 // 데이터베이스 연결 메소드
@@ -195,7 +202,7 @@ var authUser = function(database, id, password, callback) {
 };
 
 
-// 사용자 검색 함수
+// 회원 검색 함수
 var findUser = function(database, value, search_option, callback) {
   console.log('findUser 호출됨.');
   console.log(search_option + " : " + value);
@@ -222,13 +229,56 @@ var findUser = function(database, value, search_option, callback) {
 
 };
 
+// 이메일 전송 함수
+var sendEmail = function(from_email, to_email, subject, html) {
+  /*
+  let smtpConfig = {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: false, // upgrade later with STARTTLS
+    auth: {
+        user: 'username',
+        pass: 'password'
+    }
+};
+  */
+  var smtpTransport = nodemailer.createTransport({
+    pool: true,
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: 'inspirebj@gmail.com',
+        pass: 'bcjsforever93'
+    }
+  });
+
+  var mailOptions = {
+    from: 'from_email',
+    to: to_email,
+    subject: subject,
+    html: html
+  };
+
+  smtpTransport.sendMail(mailOptions, function(error, response) {
+    if(error) {
+      console.log(error); 
+    } else {
+      console.log('message sent : ' + response.message);
+    }
+
+    smtpTransport.close();
+  });
+
+};
+
 var addFriend = function(database, user_id, friend_id, callback) {
   console.log('addFriend 호출됨.');
 
   var friend = database.collection('friend');
   if(user_id == friend_id) {
-    console.log('본인 자신을 친추할 수 없습니다.');
-    res.send('본인 자신을 친추할 수 없습니다.');
+    console.log('자기 자신을 친추할 수 없습니다.');
+    res.send({'alert_message': '자기 자신을 친추할 수 없습니다.'});
   }
   
   friend.find({"id": user_id, "friend_id" : friend_id}).toArray(function(err, docs) {
@@ -294,6 +344,9 @@ router.route('/join').post(function(req, res) {
   var info =  req.body.content;
   var profile_image = 'image';
 
+  var subject = name + '님 코드쉐어 회원가입을 축하드립니다.';
+  var html = subject + '<br> 코드쉐어에서 다양한 네트워킹과 코딩 협업을 이루시길 바랍니다^_^';
+
   console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + name + ', ' + sex + ', ' + birth + ', ' + phone);
 
   if(database) {
@@ -303,20 +356,17 @@ router.route('/join').post(function(req, res) {
         if(result && result.insertedCount > 0) {
           console.dir(result);
   
-          res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-          res.write('<h1>사용자 추가 성공</h1>');
-          res.end();
+          console.log('사용자 추가 성공');
         } else {
-          res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-          res.write('<h1>사용자 추가 실패</h1>');
-          res.end();
+          console.log('사용자 추가 실패');
         }
       });
     } else {
-      res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-      res.write('<h1>데이터베이스 연결 실패</h1>');
-      res.end();
+      console.log('데이터베이스 연결 실패');
     }
+    
+    res.redirect('http://127.0.0.1:3500');
+    sendEmail('inspirebj@gmail.com', paramId, subject, html);
 });
 
 
@@ -329,7 +379,7 @@ router.route('/login').post(function(req, res) {
 
   if(req.session.user) {
     console.log('이미 로그인되어있습니다.');
-    res.send('<h2>이미 로그인되어있습니다.</h2>');
+    res.send({"alert_message" : "이미 로그인 되어있습니다."});
   }
   else {
   if(database) {
@@ -380,10 +430,27 @@ router.route('/logout').get(function(req, res) {
       });    
   }
   else {
-      res.send('<h1>로그인된 세션 정보가 없습니다.</h1>');
+      res.send({"alert_message" : "로그인된 정보가 없습니다."});
   }   
 });
 
+router.route('/findPassword').get(function(req, res) {
+  if(req.session.user) {
+    var email = req.session.user.id;
+    var subject = '코딩쉐어 비밀번호 찾기 안내 메일입니다.';
+    var pass_temp = shortid.generate() + shortid.generate();
+    var html_content = req.session.user.name + '님! 코드쉐어에서 회원님의 이메일 계정으로 임시 비밀번호를 보내드립니다.<br>임시비밀번호로 로그인 후 비밀번호를 변경해주세요!<br> 임시비밀번호 : ' + pass_temp;
+
+    if(database) {
+      var user = database.collection('users2');
+      user.update({'id' : req.session.user.id}, {$set : {'password' : pass_temp}});
+    }
+    sendEmail('inspirebj@gmail.com', email, subject, html_content);
+  } else {
+    console.log('로그인 세션 필요');
+    res.send({"key" : "login", "request_url" : "/findPassword"});
+  }
+});
 
 // 마이페이지 조회
 router.route('/mygroup').get(function (req, res) {
@@ -392,11 +459,10 @@ if(req.session.user) {
   var userId = req.session.user.id;   // 세션 객체에서 로그인된 회원 아이디 추출
 
 } else {
-  var request_url = '/mygroup';
+ 
   console.log('로그인이 필요함.');
-
-  res.send(request_url);
-  res.redirect('http://127.0.0.1:3500/public/login.html');  
+  res.send({"key" : "login", "request_url" : "/mygroup"});
+  //res.redirect('http://127.0.0.1:3500/public/login.html');  
   // 로그인페이지에서 로그인 클릭시 기존 요청했던 requset_url로 페이지를 이동시키도록 구현
 }
 
@@ -408,18 +474,23 @@ router.route('/finduser').post(function (req, res) {
   var search_option = req.body.search_option;   // 사용자가 회원 검색시 select 태그로 선택한 조건 값을 불러온다
   var value = req.body.keyword;
   console.log(search_option);
-
-  if(database) {
-    findUser(database, value, search_option, function(err, docs) {
-      if(err) { throw err; }
-      if(docs) {
-        console.log(docs);
-        res.send(docs);
-      }
-      else {  // 검색 결과 데이터가 존재하지 않을 때
-        res.send("검색 결과가 존재하지 않습니다.");
-      }
-    });
+  if(req.session.user) {
+    if(database) {
+      findUser(database, value, search_option, function(err, docs) {
+        if(err) { throw err; }
+        if(docs) {
+          console.log(docs);
+          res.send(docs);
+        }
+        else {  // 검색 결과 데이터가 존재하지 않을 때
+          res.send("검색 결과가 존재하지 않습니다.");
+        }
+      });
+    }
+  } else {
+    console.log('로그인이 필요합니다.');
+    res.send({"key" : "login", "request_url" : "/finduser"});
+    //res.redirect('http://127.0.0.1:3500/public/login.html');
   }
 });
 
@@ -465,12 +536,26 @@ roomName = req.params.room_id;
 
 });
 
-// 친구추가 버튼을 눌렀을 때
+// 1) 친구추가 버튼을 눌렀을 때 소켓에 알림 전송(상대방에세 친구요청 알림이 실시간으로 가도록)
 router.route('/addFriend/:id').get(function(req, res) {
+  var friend_id = req.params.id;
+  if(req.session.user) {
+
+  } else {
+    console.log('로그인 세션 필요');
+    res.send({"key" : "login", "request_url" : "/addFriend/" + friend_id});
+    //res.redirect('http://127.0.0.1:3500/public/login.html');
+  }
+
+});
+
+// 2) 상대방이 친구 요청 알림 메시지를 받은 후 수락했을 때
+router.route('/addFriend/:id/accepted').get(function(req, res) {
   var friend_id = req.params.id;
   
   if(req.session.user) {
     if(database) {
+      // 디비에 친구추가 하기 전에, 상대방에게 요청 알림이 가고 수락해야 db에 저장할 것.
       // 디비에 친구 추가
       addFriend(database, req.session.user.id, friend_id, function(err, docs) {
         if(err) { throw err; }
@@ -488,7 +573,8 @@ router.route('/addFriend/:id').get(function(req, res) {
   } else {
     console.log('로그인 세션 필요');
     //로그인 페이지로 이동, 로그인 후 친구추가 요청 처리할 것.
-    res.redirect('http://127.0.0.1:3500/public/login.html');
+    res.send({"key" : "login", "request_url" : "/addFriend/" + friend_id + "/accepted"});
+    //res.redirect('http://127.0.0.1:3500/public/login.html');
   }
 });
 
@@ -512,7 +598,8 @@ router.route('/viewFriends').get(function(req, res) {
     }
   } else {
     console.log('로그인 세션 필요');
-    res.redirect('http://127.0.0.1/login');
+    res.send({"key" : "login", "request_url" : "/viewFriends"});
+    //res.redirect('http://127.0.0.1/login');
     // 로그인 후 페이지 요청을 /viewFriends로 다시 넘겨줄 것
   }
 });
@@ -574,7 +661,8 @@ router.route('/setImage').post(upload.array('photo', 1), function(req, res) {
   }
 } else {
   console.log('로그인 후 이용하세요');
-  res.redirect('http://127.0.0.1:3500/login');  // 로그인 후 프로필설정 페이지로 다시 요청해줄것
+  res.send({"key" : "login", "request_url" : "/setImage"});
+  //res.redirect('http://127.0.0.1:3500/login');  // 로그인 후 프로필설정 페이지로 다시 요청해줄것
 }
 });
 
