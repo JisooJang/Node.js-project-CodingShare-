@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <title>Chat-Shire</title>
+    <link rel="stylesheet" href="../public/css/bundle.css">
+    <link rel="stylesheet" href="../public/css/Rsmodal.css">
+    <script src="https://use.fontawesome.com/d4dd7fa524.js"></script>
+  </head>
+  <body>
+    <div class="sign_wrap">
+      <div class="sign_input_zone">
+        <h1><i class="fa fa-file-code-o" aria-hidden="true"></i> Chat-Shire</h1>
+        <div class="sign_input_wrap">
+          <div class="icon">
+            <img src="cat1.png" alt="">
+          </div>
+          <div class="sign_input_title clear">
+            <a href="#" class="sign_in_link"><h2 class="selected">SIGN IN</h2></a><a href="#" class="sign_up_link"><h2>SIGN UP</h2></a>
+          </div>
+          <form action="" class="sign_in_form">
+            <label for="inputEmail" class="inputEmail">E-MAIL</label>
+            <input type="email" id="inputEmail" placeholder="Enter your Email" autocomplete="off">
+            <label for="inputPassword" class="inputPassword">PASSWORD</label>
+            <input type="password" id="inputPassword" autocomplete="off">
+            <button type="submit" class="btn_submit">LOG IN</button>
+          </form>
+          <form action="" class="sign_up_form">
+            <label for="inputEmail" class="inputEmail">E-MAIL</label>
+            <input type="email" id="inputEmail" placeholder="Enter your Email" autocomplete="off">
+            <label for="inputPassword" class="inputPassword">PASSWORD</label>
+            <input type="password" id="inputPassword" autocomplete="off">
+            <label for="inputConfirm" class="inputConfirm">CONFIRM</label>
+            <input type="password" id="inputCofirm" autocomplete="off">
+            <label for="inputNickname" class="inputNickname">NICKNAME</label>
+            <input type="text" id="inputNickname" placeholder="Enter your Nickname" autocomplete="off">
+            <button type="submit" class="btn_submit">SIGN UP</button>
+          </form>
+        </div>
+      </div>
+      <div class="sign_info_zone">
+      </div>
+    </div>
+    <div class="RSmodal" id="loginModal">
+      <div class="login_modal_header">
+        <div class="vertical">LOGIN ERROR</div>
+      </div>
+      <div class="login_modal_content"></div>
+      <div class="login_modal_footer">
+        <button type="button">CLOSE</button>
+      </div>
+    </div>
+  </body>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="../public/js/bundle.js"></script>
+</html>

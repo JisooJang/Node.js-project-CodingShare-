@@ -1,14 +1,13 @@
 var nodemailer = require('nodemailer');
 
-var addUser = function(database, id, password, name, sex, birth, phone, email, info, profile_image, callback) {
-    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name, + ', ' + sex);
+var addUser = function(database, id, password, name, profile_image, callback) {
+    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
   
     // db의 users2 컬렉션 참조
     var users = database.collection('users2');
   
     // id, password, username을 사용해 사용자 추가
-    users.insertMany([{"id":id, "password":password, "name":name, "sex":sex, "birth":birth, "phone":phone,
-     "email":email, "info":info, "profile_image":profile_image }], function(err, result) {
+    users.insertMany([{"id":id, "password":password, "name":name, "profile_image":profile_image }], function(err, result) {
       if(err) {
         callback(err, null);
         return;

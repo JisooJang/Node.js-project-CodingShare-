@@ -96,21 +96,19 @@ var upload = multer({
 //var roomName;
 io.on('connection', function(socket) {
   var roomName = router_function.roomName;
+  var client_info;
 
   console.log("소켓 연결됨.");
   console.log('room Name : ' + roomName);
   socket.join(roomName);    // roomName 방에 입장함. (roomName)방이 없으면 새로 만듦
   
   socket.on("send", function(data) {    // 소켓에 "send" 이벤트 연결
+    client_info = {
+      contents: data.contents,
+      cursor: data.cursor
+    };
   id = socket.id;
   console.log('Data : ' + data);
-
-  var client_info = {
-    socket_id: id,
-    contents: data.contents,
-    cursor: data.cursor
-  };
-
   socket.in(roomName).emit('get', client_info);   // 참여중인 방에 소켓 데이터 전송
   });
 
@@ -125,6 +123,11 @@ io.on('connection', function(socket) {
   socket.on('addFriend', function(data) {   //친구추가 버튼 클릭시, 상대방에게 실시간 요청 알림
     console.log('Data : ' + data);  //data에는 친구의 id를 포함해야함.
     socket.emit('alert_addFried', data);  // 친구의 id에게만 전송해야함.
+  });
+
+  socket.on('addFriend_accepted', function(data) {
+    console.log('Data : ' + data);
+    socket.emit('alert_addFriend_accepted', data);
   });
 });
 

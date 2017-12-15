@@ -9,87 +9,76 @@ var init = function(db) {
 }
 
 var join = function(req, res) {
-    var paramId = req.body.member_id;
-    var paramPassword = req.body.pwd;
-    var name = req.body.member_name;
-    var sex =  req.body.sex;
-    var birth =  req.body.birth;
-    var phone =  req.body.phone;
-    var email =  req.body.email;
-    var info =  req.body.content;
+    console.log('/join 요청');
+    console.log(req.body.email);
+    console.log(req.body.password);
+    console.log(req.body.nickname);
+
+    var paramId = req.body.email;
+    var paramPassword = req.body.password;
+    var name = req.body.nickname;
     var profile_image = 'image';
-  
+
+    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + name);
+    
+
     var subject = name + '님 코드쉐어 회원가입을 축하드립니다.';
     var html = subject + '<br> 코드쉐어에서 다양한 네트워킹과 간편한 코딩 공유를 경험해보세요 ^_^';
-  
-    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + name + ', ' + sex + ', ' + birth + ', ' + phone);
-  
+
+    
     if(database) {
-        user.addUser(database, paramId, paramPassword, name, sex, birth, phone, email, info, profile_image, function(err, result) {
+        user.addUser(database, paramId, paramPassword, name, profile_image, function(err, result) {
           if(err) { throw err; }
     
           if(result && result.insertedCount > 0) {
             console.dir(result);
     
             console.log('사용자 추가 성공');
+            res.send({'alert_message' : '가입 성공'});
+            user.sendEmail('inspirebj@gmail.com', paramId, subject, html);
           } else {
             console.log('사용자 추가 실패');
+            res.send({'alert_message' : '가입 실패'});
           }
         });
       } else {
         console.log('데이터베이스 연결 실패');
+        res.send({'alert_message' : '데이터베이스 오류'});
       }
-      
-      res.redirect('http://127.0.0.1:3500');
-      user.sendEmail('inspirebj@gmail.com', paramId, subject, html);
 }
 
 var login = function(req, res) {
-    var paramId = req.body.id;
-    var paramPassword = req.body.password;
+  var paramId = req.body.email;
+  var paramPassword = req.body.password;
   
-    console.log(paramId + ', ' + paramPassword);
+  console.log(paramId + ', ' + paramPassword);
   
-    if(req.session.user) {
-      console.log('이미 로그인되어있습니다.');
-      res.send({"alert_message" : "이미 로그인 되어있습니다."});
-    }
-    else {
-    if(database) {
-      user.authUser(database, paramId, paramPassword, function(err, docs) {
-        if(err) { throw err; }
-        if(docs) {
-          console.dir(docs);
-          var username = docs[0].name;
-          req.session.user = {
-              id: paramId,
-              name: username,
-              authorized: true
-          }
-  
-          res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-          res.write('<h1>로그인 성공</h1>');
-          res.write('<div><p>' + '사용자 이름 : ' + username + '</p></div>');
-          res.write('<div><p>' + '사용자 입력 아이디 : ' + paramId +'</p></div>');
-          res.write("<br><br><a href='/public/login.html'>다시 로그인하기</a>");
-          res.end();
-        } else {
-          res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-          res.write('<h1>로그인 실패</h1>')
-          res.write('<div><p>아이디와 비밀번호를 다시 확인하십시오.</p></div>');
-          res.write("<br><br><a href='/public/login.html'>다시 로그인하기</a>");
-          res.end();
-        }
-  
-      });
-    } else {
-      res.writeHead('200', {'Content-type':'text/html;charset=utf8'});
-      res.write('<h1>데이터베이스 연결 실패</h1>')
-      res.write('<div><p>아이디와 비밀번호를 다시 확인하십시오.</p></div>');
-      res.write("<br><br><a href='/public/login.html'>다시 로그인하기</a>");
-      res.end();
-    }
+  if(req.session.user) {
+    console.log('이미 로그인되어있습니다.');
   }
+  else {
+    if(database) {
+    user.authUser(database, paramId, paramPassword, function(err, docs) {
+      if(err) { throw err; }
+      if(docs) {
+        console.dir(docs);
+        var username = docs[0].name;
+        req.session.user = {
+            id: paramId,
+            name: username,
+            authorized: true
+        }
+        res.send({'alert_message' : '로그인 성공'});
+      } else {
+        console.log('로그인 실패');
+        res.send({'alert_message' : '로그인 실패'});
+      }
+    });
+  } else {
+    console.log('데이베이스 오류');
+    res.send({'alert_message' : '데이터베이스 오류'});
+  }
+}
 };
 
 var logout = function(req, res) {
@@ -171,17 +160,21 @@ var make_rooms = function(req, res) {
 
 var shareRoom = function(req, res) {
     roomName = req.params.room_id;
-    fs.readFile('./public/chat_index.html', "utf-8", function(error, data) {
+    fs.readFile( __dirname + '/../views/board.html', "utf-8", function(error, data) {
       if(error) console.log(error.message);
-      res.writeHead(200, {'Content-Type' : 'text/html'});
-      res.end(data);
+      //res.writeHead(200, {'Content-Type' : 'text/html'});
+      res.send(data.toString());
     });
 }
 
 var addFriend = function(req, res) {
     var friend_id = req.params.id;
     if(req.session.user) {
-  
+      res.send({
+        "alert_message" : "add_friend",
+        "requester" : req.session.user.id,
+        "receiver" : friend_id
+    });
     } else {
       console.log('로그인 세션 필요');
       res.send({"key" : "login", "request_url" : "/addFriend/" + friend_id});
@@ -299,7 +292,10 @@ var setImage = function(req, res) {
 }
 
 var index = function(req, res) {
-    res.redirect('http://127.0.0.1:3500/public/index.html');
+    fs.readFile( __dirname + '/../views/sign.html', 'utf-8', function (error, data) {
+      if(error) { console.log('error:' + error); }
+        res.send(data.toString());
+    });
 }
 
 module.exports.init = init;
