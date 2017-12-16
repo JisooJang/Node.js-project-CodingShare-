@@ -5,14 +5,38 @@ var lastVal = $(editor.document.body).html();
 
 var lastCursor = 0;
 
-
 //iframe 디자인
 editor.document.designMode = "on";
 editor.document.body.style = 'margin : 0';
 editor.document.body.style = 'color : #fff';
 
-$('.emit').on('click',function(){
-  socket.emit('send',$(editor.document.body).html());
+$('.dropdown-menu > *').click(function(e) {
+  var text = $(this).text();
+  $('#dropdownMenuButton').text(text);
+});
+
+$('#save').click(function(e) {
+  if($('#dropdownMenuButton').val() == 'Dropdown button') {
+    alert('코드 언어를 선택해주세요.');
+    return;
+  }
+  var request_url = $(location).attr('href').substring(21, $(location).attr('href').length) + '/save';
+  alert(request_url);
+
+  var room_title = prompt('저장할 방 이름을 입력하세요. ', 'roomName');
+  var user_id = "";
+  if(sessionStorage.getItem("user_id")) {
+    alert('user_id 존재');
+    user_id = sessionStorage.getItem("user_id");
+  }
+  socket.emit('save', {
+    'contents' : $(editor.document.body).html(),
+    'cursor': range.anchorOffset,
+    'code_language': $('#dropdownMenuButton').text(),
+    'room_url': $(location).attr('href'),
+    'room_title': room_title,
+    'user_id': user_id
+  });
 });
 
 $(editor.document).on({
@@ -69,7 +93,7 @@ $.fn.selectRange = function(start, end) {
 
 
 socket.on('get',function(data){
-  console.log(data);
+  console.log('get data : ' + data);
   $(editor.document.body).html(data.contents);
 
   if(data.cursor<lastCursor){
@@ -84,6 +108,14 @@ socket.on('get',function(data){
   selection.removeAllRanges();
   selection.addRange(range);
 
+ });
+
+ socket.on('save_result', function(data) {
+  if(data.key == 'success') {
+    alert('코드방이 성공적으로 저장되었습니다.');
+  } else {
+    alert('저장 중 오류가 발생하였습니다. 잠시 후에 다시 시도해주세요');
+  }
  });
 
 

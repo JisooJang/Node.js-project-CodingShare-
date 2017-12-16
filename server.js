@@ -11,6 +11,7 @@ var bodyParser = require('body-parser'), static = require('serve-static');
 var static = require('serve-static');
 var cookieParser = require('cookie-parser');
 var expressSession = require('express-session');        // 세션정보는 메모리에 저장
+//var sharedsession = require("express-socket.io-session");
 
 // 오류 핸들러 모듈 사용
 var expressErrorHandler = require('express-error-handler');
@@ -49,8 +50,12 @@ app.use(expressSession({    // 세션 객체 호출 시 반환되는 객체 전�
   secret: 'abc123',
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 60000 }
+  cookie: {
+    maxAge: 1000 * 60 * 60 // 쿠키 유효기간 1시간
+  }
 }));
+//io.use(sharedsession(expressSession));
+
 app.use(bodyParser.urlencoded({ extended: false }));    // body-parser를 사용해 application/x-www-form-urlencoded 파싱
 app.use(bodyParser.json());   // application/json 파싱
 app.use('/public', static(path.join(__dirname, 'public')));  // 'public' 폴더에 있는 파일들을 static 미들웨어를 이용하여 특정 패스로 접근 가능하게 함
@@ -59,6 +64,7 @@ app.use('/', router);
 app.use(expressErrorHandler.httpError(404));
 app.use(errorHandler);
 app.use(cookieParser());
+app.use(cors());
 
 app.use(passport.initialize());   // 패스포트 초기화
 app.use(passport.session());  // 패스포트 로그인 세션 유지
@@ -93,43 +99,11 @@ var upload = multer({
   }
 });
 
-//var roomName;
-io.on('connection', function(socket) {
-  var roomName = router_function.roomName;
-  var client_info;
-
-  console.log("소켓 연결됨.");
-  console.log('room Name : ' + roomName);
-  socket.join(roomName);    // roomName 방에 입장함. (roomName)방이 없으면 새로 만듦
-  
-  socket.on("send", function(data) {    // 소켓에 "send" 이벤트 연결
-    client_info = {
-      contents: data.contents,
-      cursor: data.cursor
-    };
-  id = socket.id;
-  console.log('Data : ' + data);
-  socket.in(roomName).emit('get', client_info);   // 참여중인 방에 소켓 데이터 전송
-  });
-
-  socket.on('chat', function(data) {    // 코드공유 페이지 내 멤버 채팅 이벤트 처리
-    console.log('room Name : ' + roomName);
-    console.log('Data : ' + data);
-
-    socket.in(roomName).emit('chat_get', data);
-
-  });
-
-  socket.on('addFriend', function(data) {   //친구추가 버튼 클릭시, 상대방에게 실시간 요청 알림
-    console.log('Data : ' + data);  //data에는 친구의 id를 포함해야함.
-    socket.emit('alert_addFried', data);  // 친구의 id에게만 전송해야함.
-  });
-
-  socket.on('addFriend_accepted', function(data) {
-    console.log('Data : ' + data);
-    socket.emit('alert_addFriend_accepted', data);
-  });
-});
+var roomName;
+var client_info = {
+  contents: "",
+  cursor: 0
+};
 
 // 데이터베이스 연결 메소드
 function connectDB() {
@@ -174,9 +148,11 @@ router.route('/logout').get(router_function.logout);
 
 router.route('/findPassword').get(router_function.findPassword);
 
-// 마이페이지 조회
+// 그룹 조회
 router.route('/mygroup').get(router_function.mygroup);
 
+// 내정보 조회
+router.route('/mypage').get(router_function.mypage);
 
 // 회원검색 라우팅 함수
 router.route('/finduser').post(router_function.finduser);
@@ -185,6 +161,9 @@ router.route('/make_rooms').get(router_function.make_rooms);
 
 // 코딩쉐어 텍스트 편집방에 들어올 때
 router.route('/shareRoom/:room_id').get(router_function.shareRoom);
+
+router.route('/myRooms').get(router_function.myRooms);
+router.route('/likes/:room_id').get(router_function.likesRoom);
 
 // 1) 친구추가 버튼을 눌렀을 때 소켓에 알림 전송(상대방에세 친구요청 알림이 실시간으로 가도록)
 router.route('/addFriend/:id').get(router_function.addFriend);
@@ -198,13 +177,99 @@ router.route('/viewFriends').get(router_function.viewFriends);
 // 사용자 프로필 사진 설정
 router.route('/setImage').post(upload.array('photo', 1), router_function.setImage);
 
+// 메인에서 관리자 contact버튼 클릭
+router.route('/contact_send').post(router_function.contact_send);
+
 // 메인페이지
 router.route('/').get(router_function.index);
 
+io.on('connection', function(socket) {
+  roomName = router_function.roomName;
+  id = socket.id;
+
+  console.log("소켓 연결됨.");
+  console.log('room Name : ' + roomName);
+  console.log('socketId : ' + id);
+  socket.join(roomName);    // roomName 방에 입장함. (roomName)방이 없으면 새로 만듦
+
+  //socket.in(roomName).emit('get', client_info);
+  //console.log('client_info : ' + client_info.contents);
+  socket.to(id).emit('get', client_info);
+  console.log('client_info : ' + client_info.contents); 
+
+  socket.on("send", function(data) {    // 소켓에 "send" 이벤트 연결
+    client_info = {
+      contents: data.contents,
+      cursor: data.cursor
+    };
+    console.log('Data : ' + data.contents + 'cursor : ' + data.cursor);
+    socket.in(roomName).emit('get', client_info);   // 참여중인 방에 소켓 데이터 전송
+  });
+
+  socket.on('chat', function(data) {    // 코드공유 페이지 내 멤버 채팅 이벤트 처리
+    console.log('room Name : ' + roomName);
+    console.log('Data : ' + data);
+
+    socket.in(roomName).emit('chat_get', data);
+
+  });
+
+  socket.on('addFriend', function(data) {   //친구추가 버튼 클릭시, 상대방에게 실시간 요청 알림
+    console.log('Data : ' + data);  //data에는 친구의 id를 포함해야함.
+    socket.emit('alert_addFried', data);  // 친구의 id에게만 전송해야함.
+  });
+
+  socket.on('addFriend_accepted', function(data) {
+    console.log('Data : ' + data);
+    socket.emit('alert_addFriend_accepted', data);
+  });
+
+  socket.on('save', function(data) {
+    //디비에 저장
+    //session_user = router_function.session;
+    console.log('socket save 호출');
+    console.log('data.user_id : ' + data.user_id);
+    
+    if(data.user_id != "") {
+      console.log('user_id 존재');
+      var contents = data.contents;
+      var code_language = data.code_language;
+      var room_url = data.room_url;
+      var room_title = data.room_title;
+      var user_id = data.user_id;
+      var description = room_title;
+      var likes = 0;
+      var participants = [];
+      participants.push(user_id);
+
+      console.log(user_id);
+      console.log(participants.length);
+      console.log(participants[0]);
+
+      if(database) {
+        user.saveRoom(database, participants, contents, code_language, room_url, room_title, description, likes, function(err, result) {
+          if(err) { throw err; }
+          if(result && result.insertedCount > 0) {
+            console.log('데이터 삽입 성공');
+            socket.emit('save_result', {'key': 'success'});
+          } else {
+            console.log('데이터 삽입 실패');
+            socket.emit('save_result', {'key': 'error'});
+          }
+        });
+      } else {
+        console.log('디비 오류');
+      }
+
+    } else {
+      console.log('로그인 해야 저장 가능함');
+      socket.emit('save_result', {'key' : 'login'});
+    }
+  });
+});
 
 // 3500번 포트에 웹서버 시작
 server.listen(3500, function() {
   console.log('Server starting...');
   connectDB();  // DB 연결 메소드 호출
 });
-

@@ -5,12 +5,32 @@
     <title></title>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script>
+      $(document).ready(function() {
+        var html = '';
+        $.ajax({
+          url: '/myRooms',
+          type: 'get',
+          success: function(data) {
+            for(var i=0 ; i<data.length ; i++) {
+              var href = data[i].room_url;
+              var subject = data[i].room_title;
+              var descrip = data[i].description;
+              var language = data[i].code_language;
+              var likes = data[i].likes;
+
+              html += '<a href="' + href + '" class="list-group-item list-group-item-action flex-column align-items-start"><div class="d-flex w-100 justify-content-between"><h5 class="mb-1">' + subject + '</h5><small class="text-muted"><img src="./image/like.png"/> ' + likes + '</small></div><p class="mb-1">' + descrip + '</p><small class="text-muted">language : ' + language +'</small></a>';
+            }
+            $('.list-group').html(html);
+          } 
+        });
+      });
     </script>
   </head>
   <body>
-    <h1>my-group</h1>
     <hr>
     <table id="group_list" align="center">
+        <div class="list-group">
+          </div>
     </table>
   </body>
 </html>

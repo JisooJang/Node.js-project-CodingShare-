@@ -3,11 +3,38 @@
   <head>
     <meta charset="utf-8">
     <title></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
     <script>
       $(document).ready(function() {
+        var socket = io().connect(); //소켓 연결
+        socket.on('addFriend', function(data) {
 
+        });
+        /*
+        $.ajax({
+          url: '/viewFriends',
+          type: 'get',
+          success: function(data) {
+            alert(data);
+          }
+        });*/
+        $('#friend_list').click(function(e) {
 
+          $.ajax({
+            url: '/viewFriends',
+            type: 'get',
+            success: function(data) {
+              for(var i=0 ; i<data.length ; i++) {
+                var html = '<li>' + data[i].profile_image + '</li>' + '<li><a href="#">' + data[i].id + '</a></li>';
+                $('.dropdown-menu').html(html);
+              }
+            }
+          });
+
+        });
       });
     </script>
   </head>
@@ -26,14 +53,25 @@
     <a href="/public/my_group.html" id="group_btn">참여방 확인</a><br>
     <a href="/public/finduser.html" id="findUser_btn">회원찾기</a><br>
     <a href="/viewFriends">친구목록</a>
-    <a href="/public/setImage.html">썸네일 설정</a>
+    
     -->
     <div id="div1">
     <a href="/logout" id="login_btn">로그아웃</a>
     <a href="/mypage" id="mypage_btn">마이페이지</a>
     <a href="/public/finduser.html" id="findUser_btn">회원찾기</a><br>
     <a href="/make_rooms" id="group_btn">방만들기</a><br>
+    <a href="/public/setImage.html">썸네일 설정</a>
     <a href="/alert" id="alert_btn"><img src="./image/alert.png" width="60" height="60"/></a>
+    <hr>
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" id="friend_list" type="button" data-toggle="dropdown">친구 목록
+        <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+          
+        </ul>
+      </div>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
   </body>
 </html>

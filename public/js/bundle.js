@@ -174,7 +174,7 @@ module.exports = function(){
 }
 
 $('.sign_in_form button').on('click',function(){
-
+  var user_id = $('.sign_in_form #inputEmail').val();
   $.ajax({
             url:'/login',
             type:'POST',
@@ -185,7 +185,8 @@ $('.sign_in_form button').on('click',function(){
             success:function(data){
                 console.log(data);
                 if(data.alert_message == "로그인 성공") {
-                  location.href='http://127.0.0.1:3500/public/index.html';
+                  sessionStorage.setItem("user_id", user_id);
+                  location.href='http://127.0.0.1:3500/public/index2.html';
                 } else if(data.alert_message == "로그인 실패") {
                   location.href='http://127.0.0.1:3500/public/404.html';
                 } else {
@@ -211,7 +212,8 @@ $('.sign_up_form button').on('click',function(){
                 console.log(data);
 
                 if(data.alert_message == "가입 성공") {
-                  location.href='http://127.0.0.1:3500/public/index.html';
+                  alert('가입이 성공적으로 완료되었습니다. 로그인해주세요!');
+                  location.href='http://127.0.0.1:3500';
                 } else if(data.alert_message == "가입 실패") {
                   location.href='http://127.0.0.1:3500/public/404.html';
                 } else {

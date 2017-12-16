@@ -3,7 +3,6 @@ var user = require('./user_function.js');
 var shortid = require('shortid'); // 랜덤URL 생성 모듈
 var database;
 var roomName;
-
 var init = function(db) {
     database = db;
 }
@@ -17,7 +16,7 @@ var join = function(req, res) {
     var paramId = req.body.email;
     var paramPassword = req.body.password;
     var name = req.body.nickname;
-    var profile_image = 'image';
+    var profile_image = 'http://127.0.0.1:3500/public/image/default_profile.png';
 
     console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + name);
     
@@ -66,6 +65,7 @@ var login = function(req, res) {
         req.session.user = {
             id: paramId,
             name: username,
+            profile_image: docs[0].profile_image,
             authorized: true
         }
         res.send({'alert_message' : '로그인 성공'});
@@ -88,11 +88,12 @@ var logout = function(req, res) {
   
         req.session.destroy(function(err) {
             console.log('세션 삭제 완료');
-            res.redirect('http://127.0.0.1:3500/public/index.html');
+            res.send({"alert_message" : "로그아웃 완료"});
+            //res.redirect('http://127.0.0.1:3500');
         });    
     }
     else {
-        res.send({"alert_message" : "로그인된 정보가 없습니다."});
+        res.send({"alert_message" : "세션이 만료되었습니다. 다시 로그인해주세요."});
     }   
 }
 
@@ -160,12 +161,37 @@ var make_rooms = function(req, res) {
 
 var shareRoom = function(req, res) {
     roomName = req.params.room_id;
-    fs.readFile( __dirname + '/../views/board.html', "utf-8", function(error, data) {
-      if(error) console.log(error.message);
-      //res.writeHead(200, {'Content-Type' : 'text/html'});
-      res.send(data.toString());
+    console.log('router roomName : ' + roomName);
+    if(req.session.user) {
+      console.log(req.session.user.id);
+      session = req.session.user.id;
+    }
+    user.shareRoom(database, req.params.room_id, function(err, docs) {
+      if(err) { throw err; }
+      if(docs) {
+        console.log('db에 방 존재');
+        res.send(docs);
+      } else {
+        console.log('방 검색결과 없음');
+        fs.readFile( __dirname + '/../views/board.html', "utf-8", function(error, data) {
+          if(error) console.log(error.message);
+          //res.writeHead(200, {'Content-Type' : 'text/html'});
+          res.send(data.toString());
+        });   
+      }
     });
 }
+
+/*
+var saveRoom = function(req, res) {
+  console.log("saveRoom 호출");
+
+  var code_language = req.body.language;
+  var code_contents = req.body.contents;
+  console.log(code_language + ' ' + code_contents);
+  res.send(code_language);
+}
+*/
 
 var addFriend = function(req, res) {
     var friend_id = req.params.id;
@@ -195,7 +221,7 @@ var addFriend_accepted = function(req, res) {
             res.send(docs);
           }
           else { 
-            res.send("이미 친구추가가 되어있는 회원입니다.");
+            res.send("이미 친구 추가가 되어있는 회원입니다.");
           }
         });
       } else {
@@ -211,11 +237,11 @@ var addFriend_accepted = function(req, res) {
 var viewFriends = function(req, res) {
     if(req.session.user) {
       if(database) {
-        user.viewFriends(database, req.session.user.id, function(err, docs) {
+        user.viewFriends(database, req.session.user.id, function(err, docs) { //docs는 친구배열
           if(err) { throw err; }
           if(docs) {
             console.log(docs);
-            res.send(docs); // 디비 검색 결과(배열)을 응답객체로 보냄
+            res.send(docs); // 디비 검색 결과(배열)을 응답객체로 보냄 */
           }
           else { 
             res.send("친구 레코드 검색 오류");
@@ -232,9 +258,12 @@ var viewFriends = function(req, res) {
 }
 
 var setImage = function(req, res) {
+    var name = req.body.name;
+    var pwd = req.body.pwd;
     var files = req.files;
+
     console.log('files : ' + files);
-  
+    console.log('name pw : ' + name + ' ' + pwd);
     if(req.session.user) {
         try {
             console.dir('#===== 업로드된 파일 정보 =====#');
@@ -270,14 +299,21 @@ var setImage = function(req, res) {
                 var img_url = "http://127.0.0.1:3500/uploads/" + filename;
                 // 세션에서 회원아이디를 가져온 후, 프로필이미지 url db에 저장 
                 var users = database.collection('users2');
-                users.update({ "id": req.session.user.id }, {$set: { "profile_image": img_url }}, function(err, docs) {
+                users.update({ "id": req.session.user.id }, {$set: { "name": name, "password": findPassword, "profile_image": img_url }}, function(err, docs) {
                     if(err) { throw err; }
                     if(docs) {
                         console.log(docs);
-                        res.send(docs);
+                        var user_id = req.session.user.id;
+                        req.session.user = {
+                          id: user_id,
+                          name: name,
+                          profile_image: img_url,
+                          authorized: true
+                        };
+                        res.redirect('/public/mypage.html');
                     }
                     else { 
-                        res.send("프로필 이미지 설정 오류");
+                        res.send("프로필 수정 오류");
                     }
                 });
             }
@@ -290,6 +326,63 @@ var setImage = function(req, res) {
         res.send({"key" : "login", "request_url" : "/setImage"});
     }
 }
+
+var contact_send = function(req, res) {
+  var name = req.body.name;
+  var email = req.body.email;
+  var phone = req.body.phone;
+  var message = req.body.message;
+
+  var admin_email = 'inspirebj@gmail.com';
+  var content = '<div class="card"><div class="card-header">Coding-Chat Contact</div><div class="card-block"><blockquote class="card-blockquote"><p>작성자 명 : ' + name + ' </p><p>연락처 : ' + phone + '</p><footer>' + message + '</footer></blockquote></div></div>'
+
+  user.sendEmail(email, admin_email, 'Coding-Chat contact - ' + name + '님 작성', content);
+  res.send("Coding-Chat 관리자에게 요청 내용이 성공적으로 전송되었습니다.");
+}
+
+var mypage = function(req, res) {
+  if(req.session.user) {
+    res.send(req.session.user);
+  } else {
+    res.send({"alert_message" : "로그인이 필요합니다."});
+  }
+}
+
+var myRooms = function(req, res) {
+  if(req.session.user) {
+    if(database) {
+      user.viewRooms(database, req.session.user.id, function(err, docs) {
+        if(err) { throw err; }
+        if(docs) {
+          res.send(docs);
+        } else {
+          console.log('검색 결과가 없습니다.');
+          res.send({'alert_message' : '결과 없음'});
+        };
+      });
+    } else {
+      console.log('디비 오류');
+      res.send({"alert_message" : "데이터베이스 오류"});
+    }
+  } else {
+    //res.send({"alert_message" : "로그인이 필요합니다."});
+    res.redirect('http://127.0.0.1:3500/');
+  }
+}
+
+var likesRoom = function(req, res) {
+  var room_id = req.params.room_id;
+  if(req.session.user) {
+    if(database) {
+      user.likeRooms(database, req.session.user.id, room_id, function(result) {
+        if(err) { throw err; }
+        if(result) {
+          res.send(result);
+        }
+      });
+    }
+  }
+};
 
 var index = function(req, res) {
     fs.readFile( __dirname + '/../views/sign.html', 'utf-8', function (error, data) {
@@ -312,4 +405,8 @@ module.exports.addFriend = addFriend;
 module.exports.addFriend_accepted = addFriend_accepted;
 module.exports.viewFriends = viewFriends;
 module.exports.setImage = setImage;
+module.exports.contact_send = contact_send;
+module.exports.mypage = mypage;
 module.exports.index = index;
+module.exports.myRooms = myRooms;
+module.exports.likesRoom = likesRoom;

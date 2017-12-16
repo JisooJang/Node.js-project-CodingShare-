@@ -1,5 +1,21 @@
 var nodemailer = require('nodemailer');
 
+var getUser = function(database, id, callback) {
+  var users = database.collection('users2');
+  users.find({"id" : id}).toArray(function(err, docs) {
+    if(err) {
+      callback(err, null);
+    }
+
+    if(docs.length > 0) { // 검색 결과 값이 존재하면
+      callback(null, docs);
+    } else {  // 검색 결과 값이 존재하지 않으면
+      console.log('getUser 결과 없음');
+      callback(null, null);
+    }
+  });
+}
+
 var addUser = function(database, id, password, name, profile_image, callback) {
     console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
   
@@ -101,7 +117,7 @@ var sendEmail = function(from_email, to_email, subject, html) {
       if(error) {
         console.log(error); 
       } else {
-        console.log('message sent : ' + response.message);
+        console.log('message sent : ' + response);
       }
   
       smtpTransport.close();
@@ -153,7 +169,21 @@ var addFriend = function(database, user_id, friend_id, callback) {
 var viewFriends = function(database, user_id, callback) {
     console.log('viewFriends 호출됨.');
     var friend = database.collection('friend');   //db에서 friend 이름의 컬렉션을 가져온다.
-  
+    friend.aggregate([
+      { $lookup:
+         {
+           from: 'users2',
+           localField: 'friend_id',
+           foreignField: 'id',
+           as: 'friend_details'
+         }
+       }
+      ], function(err, res) {
+      if (err) throw err;
+      console.log(JSON.stringify(res));
+      callback(null, res);
+    });
+    /*
     friend.find({ "id": user_id }).toArray(function(err, docs) {
       if(err) {
         callback(err, null);    // 콜백함수에 err객체와 null값을 보냄
@@ -168,12 +198,103 @@ var viewFriends = function(database, user_id, callback) {
         callback(null, null);
       }
     });
+    */
 }
 
+var saveRoom = function(database, participants, contents, code_language, room_url, room_title, description, likes, callback) {
+  console.log('saveRoom 호출됨');
 
+  var rooms = database.collection('rooms');
+  rooms.insertMany([{"participants":participants, "contents":contents, "code_language":code_language, "room_url":room_url, "room_title":room_title, "description":description, likes:likes }], function(err, result) {
+    if(err) {
+      callback(err, null);
+      return;
+    }
+    if(result.insertCount > 0) {
+      console.log('사용자 레코드 추가됨 : ' + result.insertedCount);
+    } else {
+      console.log('추가된 레코드가 없음.');
+    }
+    callback(null, result);
+  });
+
+}
+
+var viewRooms = function(database, user_id, callback) {
+  console.log('viewRooms 호출됨');
+  var rooms = database.collection('rooms');
+  rooms.find({"participants" : user_id}).toArray(function(err, docs) {
+    if(err) {
+      callback(err, null);
+    }
+
+    if(docs.length > 0) { // 검색 결과 값이 존재하면
+      callback(null, docs);
+    } else {  // 검색 결과 값이 존재하지 않으면
+      console.log('viewRooms 결과 없음');
+      callback(null, null);
+    }
+  });
+}
+
+var likeRooms = function(database, user_id, room_id, callback) {
+  console.log('likeRooms 호출됨');
+  var likes = database.collection('likes');
+  var rooms = database.collection('rooms');
+  likes.find({'id': user_id, 'room_id': room_id}).toArray(function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      console.log('이미 좋아요를 누름');
+      modify_likes(database, room_id, 0);
+      callback({'like_result' : 'min'});
+    } else {
+      console.log('좋아요 반영');
+      modify_likes(database, room_id, 1);
+      callback({'like_result' : 'add'});
+    }
+  });
+};
+
+
+var modify_likes = function(database, room_id, key) {
+  var likes_num = 0;
+  console.log('modify_likes 호출됨');
+  var rooms = database.collection('rooms');
+  rooms.find({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}).toArray(function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      likes_num = docs[0].likes;
+    }
+  });
+  if(key == 1) {
+    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}, {$set:{'likes': likes_num + 1}});
+  } else {
+    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}, {$set:{'likes': likes_num - 1}});
+  }
+}
+
+var shareRoom = function(database, room_id, callback) {
+  console.log('shareRoom 호출됨');
+  var room = database.collection('rooms');
+  rooms.find({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}).toArray(function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      callback(null, docs);
+    } else {
+      callback(null, null);
+    }
+  });
+
+}
+
+module.exports.getUser = getUser;
 module.exports.addUser = addUser;
 module.exports.authUser = authUser;
 module.exports.findUser = findUser;
 module.exports.sendEmail = sendEmail;
 module.exports.addFriend = addFriend;
 module.exports.viewFriends = viewFriends;
+module.exports.saveRoom = saveRoom;
+module.exports.viewRooms = viewRooms;
+module.exports.likeRooms = likeRooms;
+module.exports.shareRoom = shareRoom;

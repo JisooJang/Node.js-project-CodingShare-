@@ -3,9 +3,26 @@
   <head>
     <meta charset="utf-8">
     <title>find-user</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    
+        <!-- Custom fonts for this template -->
+        <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+    
+        <!-- Plugin CSS -->
+        <link href="vendor/magnific-popup/magnific-popup.css" rel="stylesheet" type="text/css">
+    
+        <!-- Custom styles for this template -->
+        <link href="css/freelancer.min.css" rel="stylesheet">
     <script>
       $(document).ready(function() {
+        var friend_id = "";
         /*
         $('#form1').submit(function(e) {
           alert('111');
@@ -35,13 +52,17 @@
                 var go = function() {
                   return item.id;
                 }
-                    output += '<ul>' + (index + 1) + '. 아이디 - ' + item.id + '<a id="friend_add" href="/addFriend/' + item.id + '">친구추가</a>'
-                       + '<br> 이름 - ' + item.name + '<br> 연락처 - '
-                     + item.phone + '<br> 생년월일 - ' + item.birth + '</ul>';
+                    output += '<tr><td><ul>' + (index + 1) + '. id - ' + item.id + 
+                      '<br> nickName - ' + item.name + 
+                      '<br><a id="friend_add"' + index + 1 + ' href="/addFriend/' + item.id + '"></a>'
+                      + '<br><button type="button" class="btn btn-default" id="friend_add"' + index + 1 + ' onclick="location.href=\'/addFriend/' + item.id + '\'">친구요청</button>'
+                       + '</ul></td>' 
+                       + '<td><img src=' + item.profile_image + ' width="100" height="100" /></td></tr>';
                   });
                   output += '</div>';
 
-              $('body').append(output);
+              //$('body').append(output);
+              $('#tb1').html(output);
             }
         });
       });
@@ -51,19 +72,40 @@
   </head>
   <body>
     <center>
-    <h1>회원 검색 페이지</h1>
     <hr>
     <form name="form1" id="form1" method="post" action="/finduser">
-      <select id="search_option" name="search_option">
+      <!--<select id="search_option" name="search_option">
         <option value="name">이름(닉네임)</option>
         <option value="id">이메일</option>
+      </select> -->
+      <div class="form-group">
+      <select class="form-control" id="search_option" name="search_option">
+          <option value="name">이름(닉네임)</option>
+          <option value="id">이메일</option>
       </select>
-      <input type="text" id="keyword" name="keyword" />
-      <input type="submit" id="search_btn" value="검색" />
-
-      <input type="button" id="search_btn2" value="검색2" />
+    </div>
+      <!--<input type="text" id="keyword" name="keyword" /> -->
+      <input class="form-control" type="text" id="keyword">
+      <input class="btn btn-primary" id="search_btn2" type="button" value="search">
     </form>
     <hr>
+
+    <table id="tb1" align="center">
+    </table>
   </center>
-  </body>
+  <!-- Bootstrap core JavaScript -->
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Plugin JavaScript -->
+  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+  <script src="vendor/magnific-popup/jquery.magnific-popup.min.js"></script>
+
+  <!-- Contact Form JavaScript -->
+  <script src="js/jqBootstrapValidation.js"></script>
+  <script src="js/contact_me.js"></script>
+
+  <!-- Custom scripts for this template -->
+  <script src="js/freelancer.min.js"></script>
+ </body>
 </html>
