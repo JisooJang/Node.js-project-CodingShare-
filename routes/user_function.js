@@ -276,11 +276,13 @@ var modify_likes = function(database, room_id, key) {
 var shareRoom = function(database, room_id, callback) {
   console.log('shareRoom 호출됨');
   var room = database.collection('rooms');
-  rooms.find({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}).toArray(function(err, docs) {
+  room.find({'room_url': 'http://127.0.0.1:3500/shareRoom/' + room_id}).toArray(function(err, docs) {
     if(err) { throw err; }
     if(docs) {
+      console.log('user docs : ' + docs);
       callback(null, docs);
     } else {
+      console.log('user docs 없음');
       callback(null, null);
     }
   });

@@ -23,6 +23,14 @@
             $('.list-group').html(html);
           } 
         });
+
+        $(a).click(function(e) {
+          var room_url = $(this).attr('href');
+          alert(room_url);
+          var room_id = room_url.subString(32, room_id.length);
+          alert(room_id);
+         
+        });
       });
     </script>
   </head>

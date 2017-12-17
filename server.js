@@ -160,9 +160,12 @@ router.route('/finduser').post(router_function.finduser);
 router.route('/make_rooms').get(router_function.make_rooms);
 
 // 코딩쉐어 텍스트 편집방에 들어올 때
-router.route('/shareRoom/:room_id').get(router_function.shareRoom);
+router.route('/shareRoom/:room_id').get(router_function.shareRoom_new);
+
+router.route('/shareRoom_load').post(router_function.shareRoom);
 
 router.route('/myRooms').get(router_function.myRooms);
+
 router.route('/likes/:room_id').get(router_function.likesRoom);
 
 // 1) 친구추가 버튼을 눌렀을 때 소켓에 알림 전송(상대방에세 친구요청 알림이 실시간으로 가도록)
@@ -229,6 +232,7 @@ io.on('connection', function(socket) {
     //session_user = router_function.session;
     console.log('socket save 호출');
     console.log('data.user_id : ' + data.user_id);
+    console.log('data.contents : ' + data.contents);
     
     if(data.user_id != "") {
       console.log('user_id 존재');

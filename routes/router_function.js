@@ -160,26 +160,35 @@ var make_rooms = function(req, res) {
 }
 
 var shareRoom = function(req, res) {
-    roomName = req.params.room_id;
+  console.log('shareRoom 호출');
+    roomName = req.body.room_id;
     console.log('router roomName : ' + roomName);
     if(req.session.user) {
       console.log(req.session.user.id);
-      session = req.session.user.id;
-    }
-    user.shareRoom(database, req.params.room_id, function(err, docs) {
+    
+    user.shareRoom(database, roomName, function(err, docs) {
       if(err) { throw err; }
       if(docs) {
         console.log('db에 방 존재');
+        console.log(docs);
         res.send(docs);
       } else {
         console.log('방 검색결과 없음');
-        fs.readFile( __dirname + '/../views/board.html', "utf-8", function(error, data) {
-          if(error) console.log(error.message);
-          //res.writeHead(200, {'Content-Type' : 'text/html'});
-          res.send(data.toString());
-        });   
       }
     });
+  } else {
+    console.log('로그인 필요');
+    read.send({'key': 'login'});
+  }
+}
+
+var shareRoom_new = function(req, res) {
+  roomName = req.param.room_id;
+  fs.readFile( __dirname + '/../views/board.html', "utf-8", function(error, data) {
+    if(error) console.log(error.message);
+    //res.writeHead(200, {'Content-Type' : 'text/html'});
+    res.send(data.toString());
+  });
 }
 
 /*
@@ -400,6 +409,7 @@ module.exports.mygroup = mygroup;
 module.exports.finduser = finduser;
 module.exports.make_rooms = make_rooms;
 module.exports.shareRoom = shareRoom;
+module.exports.shareRoom_new = shareRoom_new;
 module.exports.roomName = roomName;
 module.exports.addFriend = addFriend;
 module.exports.addFriend_accepted = addFriend_accepted;

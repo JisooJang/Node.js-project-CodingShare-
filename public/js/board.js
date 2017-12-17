@@ -10,33 +10,62 @@ editor.document.designMode = "on";
 editor.document.body.style = 'margin : 0';
 editor.document.body.style = 'color : #fff';
 
+var room_id2 = $(location).attr('href');
+alert(room_id2.substring(32, room_id2.length));
+$.ajax({
+  url: '/shareRoom_load',
+  type: 'post',
+  data: {
+    room_id: room_id2.substring(32, room_id2.length)
+  },
+  success: function(data) {
+    console.log(data);
+    if(data[0].contents) {
+      //방이 디비에 있으면
+      var contents = data[0].contents;
+      var code_language = data[0].code_language;
+      var participants = data[0].participants;
+
+      $(editor.document.body).text(contents);
+      $('.dropdown-item').each(function(index, item) {
+        if($(item).text() == code_language) {
+          $(item).click();
+        }
+      })
+    } 
+  }
+});
+
+
 $('.dropdown-menu > *').click(function(e) {
   var text = $(this).text();
   $('#dropdownMenuButton').text(text);
 });
 
 $('#save').click(function(e) {
+  alert($(editor.document.body).text());
   if($('#dropdownMenuButton').val() == 'Dropdown button') {
     alert('코드 언어를 선택해주세요.');
     return;
   }
   var request_url = $(location).attr('href').substring(21, $(location).attr('href').length) + '/save';
-  alert(request_url);
 
   var room_title = prompt('저장할 방 이름을 입력하세요. ', 'roomName');
+  if(room_title != null && room_title != '') {
   var user_id = "";
   if(sessionStorage.getItem("user_id")) {
     alert('user_id 존재');
     user_id = sessionStorage.getItem("user_id");
   }
   socket.emit('save', {
-    'contents' : $(editor.document.body).html(),
+    'contents' : $(editor.document.body).text(),
     'cursor': range.anchorOffset,
     'code_language': $('#dropdownMenuButton').text(),
     'room_url': $(location).attr('href'),
     'room_title': room_title,
     'user_id': user_id
   });
+}
 });
 
 $(editor.document).on({
