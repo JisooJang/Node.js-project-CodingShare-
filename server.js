@@ -250,7 +250,37 @@ io.on('connection', function(socket) {
       console.log(participants.length);
       console.log(participants[0]);
 
+      var room_id = room_url.substring(32, room_url.length);
+      console.log("room_id : " + room_id);
       if(database) {
+        // 방 url이 이미 존재하면 participants만 추가
+        user.shareRoom(database, room_id, function(err, docs) {
+          if(err) { throw err; }
+          if(docs && docs.length > 0) {
+            user.addParticipants(database, room_url, user_id, function(err, docs2) {
+              if(err) { throw err; }
+              if(docs2) {
+                socket.emit({'add_result' : 'success'});
+              } else {
+                socket.emit({'add_result' : 'error'});
+              }
+            });
+          } else {
+            // 해당 방이 디비에 존재하지않으면
+            user.saveRoom(database, participants, contents, code_language, room_url, room_title, description, likes, function(err, result) {
+              if(err) { throw err; }
+              if(result && result.insertedCount > 0) {
+                console.log('데이터 삽입 성공');
+                socket.emit('save_result', {'key': 'success'});
+              } else {
+                console.log('데이터 삽입 실패');
+                socket.emit('save_result', {'key': 'error'});
+              }
+            });
+          }
+        });
+
+        /*
         user.saveRoom(database, participants, contents, code_language, room_url, room_title, description, likes, function(err, result) {
           if(err) { throw err; }
           if(result && result.insertedCount > 0) {
@@ -260,7 +290,7 @@ io.on('connection', function(socket) {
             console.log('데이터 삽입 실패');
             socket.emit('save_result', {'key': 'error'});
           }
-        });
+        }); */
       } else {
         console.log('디비 오류');
       }

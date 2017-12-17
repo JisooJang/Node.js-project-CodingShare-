@@ -168,7 +168,7 @@ var shareRoom = function(req, res) {
     
     user.shareRoom(database, roomName, function(err, docs) {
       if(err) { throw err; }
-      if(docs) {
+      if(docs && docs.length > 0) {
         console.log('db에 방 존재');
         console.log(docs);
         res.send(docs);
@@ -191,16 +191,6 @@ var shareRoom_new = function(req, res) {
   });
 }
 
-/*
-var saveRoom = function(req, res) {
-  console.log("saveRoom 호출");
-
-  var code_language = req.body.language;
-  var code_contents = req.body.contents;
-  console.log(code_language + ' ' + code_contents);
-  res.send(code_language);
-}
-*/
 
 var addFriend = function(req, res) {
     var friend_id = req.params.id;

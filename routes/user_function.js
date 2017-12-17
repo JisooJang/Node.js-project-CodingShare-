@@ -203,7 +203,7 @@ var viewFriends = function(database, user_id, callback) {
 
 var saveRoom = function(database, participants, contents, code_language, room_url, room_title, description, likes, callback) {
   console.log('saveRoom 호출됨');
-
+  //만약 방 url이 이미 등록되어있으면 participants에 회원 아이디만 추가
   var rooms = database.collection('rooms');
   rooms.insertMany([{"participants":participants, "contents":contents, "code_language":code_language, "room_url":room_url, "room_title":room_title, "description":description, likes:likes }], function(err, result) {
     if(err) {
@@ -289,6 +289,21 @@ var shareRoom = function(database, room_id, callback) {
 
 }
 
+var addParticipants = function(database, room_url, user_id, callback) {
+  console.log('addParticipants 호출됨');
+  var room = database.collection('rooms');
+  room.update({"room_url": room_url}, { $addToSet : { "participants" : user_id }}, function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      console.log('방 참여자 추가 성공');
+      callback(null, docs);
+    } else {
+      console.log('방 참여자 추가 실패');
+      callback(null, null);
+    }
+  });
+} 
+
 module.exports.getUser = getUser;
 module.exports.addUser = addUser;
 module.exports.authUser = authUser;
@@ -300,3 +315,4 @@ module.exports.saveRoom = saveRoom;
 module.exports.viewRooms = viewRooms;
 module.exports.likeRooms = likeRooms;
 module.exports.shareRoom = shareRoom;
+module.exports.addParticipants = addParticipants;

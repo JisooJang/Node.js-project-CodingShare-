@@ -11,7 +11,6 @@ editor.document.body.style = 'margin : 0';
 editor.document.body.style = 'color : #fff';
 
 var room_id2 = $(location).attr('href');
-alert(room_id2.substring(32, room_id2.length));
 $.ajax({
   url: '/shareRoom_load',
   type: 'post',
@@ -25,13 +24,23 @@ $.ajax({
       var contents = data[0].contents;
       var code_language = data[0].code_language;
       var participants = data[0].participants;
+      var subject = data[0].room_title;
+      var html_append = '<div class="panel-group"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#collapse1">' + subject +' Participants Info <img src="../public/image/room_member.png"/></a></h4></div><div id="collapse1" class="panel-collapse collapse"><ul class="list-group">';
+          
+      for(var i=0 ; i<participants.length ; i++) {
+          html_append += '<li class="list-group-item"><font color="#353535"><b>' + participants[i] +'</b></font></li>';
+      }
+      
+      html_append += '</ul><div class="panel-footer"></div></div></div></div>';
 
       $(editor.document.body).text(contents);
       $('.dropdown-item').each(function(index, item) {
         if($(item).text() == code_language) {
           $(item).click();
         }
-      })
+      });
+
+      $('#member_list').html(html_append);
     } 
   }
 });
