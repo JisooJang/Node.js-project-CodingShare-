@@ -6,6 +6,7 @@
       success: function(data) {
         $('#user_id').text(data.id);
         $('#name').val(data.name);
+        $('#pwd').val(data.password);
         $('#profile').html('<img src="' + data.profile_image + '" width="200" height="200"/>');
       }
     });

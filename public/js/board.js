@@ -58,12 +58,10 @@ $('#save').click(function(e) {
     return;
   }
   var request_url = $(location).attr('href').substring(21, $(location).attr('href').length) + '/save';
-
-  var room_title = prompt('저장할 방 이름을 입력하세요. ', 'roomName');
-  if(room_title != null && room_title != '') {
   var user_id = "";
+  var room_title = prompt('방 신규 저장인 경우 방 이름을 입력해주세요', 'room title');
   if(sessionStorage.getItem("user_id")) {
-    alert('user_id 존재');
+    alert('로그인 체크 완료');
     user_id = sessionStorage.getItem("user_id");
   }
   socket.emit('save', {
@@ -74,7 +72,46 @@ $('#save').click(function(e) {
     'room_title': room_title,
     'user_id': user_id
   });
-}
+
+});
+
+$('#modify').click(function(e) {
+  var href = $(location).attr('href');
+  var room_id = href.substring(32, href.length);
+  sessionStorage.setItem('room_id', room_id);
+  window.open('http://127.0.0.1:3500/public/room_modify.html', 'modify', 'width=700, height=400', true);
+
+});
+
+$('#invite').click(function(e) {
+  alert('click');
+  var href = $(location).attr('href');
+  var room_id = href.substring(32, href.length);
+  var prompt_result = prompt("초대할 회원의 이메일 주소를 입력해주세요!", 'email@example.com');
+  if(prompt_result.length > 0) {
+    alert(prompt_result);
+    socket.emit('invite', {'room_url' : href, 'recepient': prompt_result});
+
+    $.ajax({
+      url: '/invite',
+      type: 'post',
+      data: {
+        room_url: href,
+        receiver: prompt_result
+      },
+      success: function(data) {
+        if(data.alert_message == 'success') {
+          alert('사용자에게 성공적으로 초대메일을 전송하였습니다.');
+        } else {
+          alert(data.alert_message);
+        }
+      }
+    });
+  }
+});
+
+$('#leave').click(function(e) {
+
 });
 
 $(editor.document).on({

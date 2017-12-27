@@ -45,7 +45,6 @@ var authUser = function(database, id, password, callback) {
     console.log('authUser 호출됨.');
   
     // users 컬렉션 참조
-    //var users = database.collection('users');
     var users = database.collection('users2');    //db에서 users2 이름의 콜렉션 정보를 가져온다.
   
     // 아이디와 비밀번호를 사용해 검색
@@ -69,7 +68,7 @@ var authUser = function(database, id, password, callback) {
   // 회원 검색 함수
 var findUser = function(database, value, search_option, callback) {
     console.log('findUser 호출됨.');
-    console.log(search_option + " : " + value);
+
     var users = database.collection('users2');   //db에서 users2 이름의 콜렉션 정보를 가져온다.
     var find_json = {};
     find_json[search_option + ""] = value;  // json객체에서 key값을 문자열로 표시하기 위한 방법
@@ -81,8 +80,7 @@ var findUser = function(database, value, search_option, callback) {
         callback(err, null);    // 콜백함수에 err객체와 null값을 보냄
         return;
       }
-  
-      if(docs.length > 0) {
+      if(docs) {
         console.log(search_option + " : " + value + " ===== 일치하는 사용자 찾음 ");
         callback(null, docs);   // 콜백함수에 db 검색결과인 docs배열을 전달
       } else {
@@ -278,7 +276,7 @@ var shareRoom = function(database, room_id, callback) {
   var room = database.collection('rooms');
   room.find({'room_url': 'http://127.0.0.1:3500/shareRoom/' + room_id}).toArray(function(err, docs) {
     if(err) { throw err; }
-    if(docs) {
+    if(docs && docs.length > 0) {
       console.log('user docs : ' + docs);
       callback(null, docs);
     } else {
@@ -289,21 +287,42 @@ var shareRoom = function(database, room_id, callback) {
 
 }
 
-var addParticipants = function(database, room_url, user_id, callback) {
+var addParticipants = function(database, room_url, user_id, contents, callback) {
   console.log('addParticipants 호출됨');
   var room = database.collection('rooms');
   room.update({"room_url": room_url}, { $addToSet : { "participants" : user_id }}, function(err, docs) {
     if(err) { throw err; }
     if(docs) {
       console.log('방 참여자 추가 성공');
-      callback(null, docs);
     } else {
       console.log('방 참여자 추가 실패');
+    }
+  });
+  room.update({"room_url": room_url}, { $set : { "contents" : contents }}, function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      console.log('방 내용 수정 성공');
+      callback(null, docs);
+    } else {
+      console.log('방 내용 수정 실패');
       callback(null, null);
     }
   });
 } 
 
+var modify_room_submit = function(database, room_id, room_title, description, password, code_language, public, callback) {
+  var room = database.collection('rooms');
+  var room_url = 'http://127.0.0.1:3500/shareRoom/' + room_id;
+  room.update({"room_url": room_url}, {$set:{'room_title': room_title, 'description':description, 'password':password, 'code_language':code_language, 'public':public}}, function(err, docs) {
+    if(err) { throw err; }
+    if(docs) {
+      callback(null, docs);
+    } else {
+      console.log('데이터 추가 오류');
+      callback(null, null);
+    }
+  });
+};
 module.exports.getUser = getUser;
 module.exports.addUser = addUser;
 module.exports.authUser = authUser;
@@ -316,3 +335,4 @@ module.exports.viewRooms = viewRooms;
 module.exports.likeRooms = likeRooms;
 module.exports.shareRoom = shareRoom;
 module.exports.addParticipants = addParticipants;
+module.exports.modify_room_submit = modify_room_submit;

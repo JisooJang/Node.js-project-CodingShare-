@@ -1,24 +1,25 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+ <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script>
+
       $(document).ready(function() {
         var html = '';
+
         $.ajax({
           url: '/myRooms',
           type: 'get',
           success: function(data) {
             for(var i=0 ; i<data.length ; i++) {
               var href = data[i].room_url;
+              var room_id = href.substring(32, href.length);
               var subject = data[i].room_title;
               var descrip = data[i].description;
               var language = data[i].code_language;
               var likes = data[i].likes;
 
               html += '<a href="' + href + '" class="list-group-item list-group-item-action flex-column align-items-start"><div class="d-flex w-100 justify-content-between"><h5 class="mb-1">' + subject + '</h5><small class="text-muted"><img src="./image/like.png"/> ' + likes + '</small></div><p class="mb-1">' + descrip + '</p><small class="text-muted">language : ' + language +'</small></a>';
+              html += '&nbsp;&nbsp;<table align="center" width="300"><tr><td><button type="button" id="modify" onclick="location.href\'http://127.0.0.1:3500/modify_room/' + room_id +'" class="btn btn-secondary btn-sm">Modify</button>';
+              html += '&nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-secondary btn-sm" id="invite">Invite</button>';
+              html += '&nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-secondary btn-sm" id="leave">Leave Room</button></td></tr></table><br>';
             }
             $('.list-group').html(html);
           } 
@@ -31,14 +32,27 @@
           alert(room_id);
          
         });
+
+        $('#modify').on("click", function(e) {
+          alert('click');
+        });
+
+
+        $('#invite').click(function(e) {
+          alert('click');
+        });
+
+        $('#leave').click(function(e) {
+
+        });
+
+
+        
       });
     </script>
-  </head>
-  <body>
     <hr>
     <table id="group_list" align="center">
         <div class="list-group">
           </div>
     </table>
-  </body>
-</html>
+

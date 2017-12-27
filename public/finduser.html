@@ -22,22 +22,7 @@
         <link href="css/freelancer.min.css" rel="stylesheet">
     <script>
       $(document).ready(function() {
-        var friend_id = "";
-        /*
-        $('#form1').submit(function(e) {
-          alert('111');
-          $.ajax({
-            url: '/process/finduser',
-            type: 'post',
-            data: {
-              search_option: $('#search_option').val(),
-              keyword: $('#keyword').val()
-            },
-            success: function(data) {
-              alert(data);
-            }
-          });
-          */
+      
         $('#search_btn2').click(function(e) {
           $.ajax({
             url: '/finduser',
@@ -55,7 +40,7 @@
                     output += '<tr><td><ul>' + (index + 1) + '. id - ' + item.id + 
                       '<br> nickName - ' + item.name + 
                       '<br><a id="friend_add"' + index + 1 + ' href="/addFriend/' + item.id + '"></a>'
-                      + '<br><button type="button" class="btn btn-default" id="friend_add"' + index + 1 + ' onclick="location.href=\'/addFriend/' + item.id + '\'">친구요청</button>'
+                      + '<br><button type="button" class="btn btn-default friend_add" onclick="location.href=\'/addFriend/' + item.id + '\'">친구요청</button>'
                        + '</ul></td>' 
                        + '<td><img src=' + item.profile_image + ' width="100" height="100" /></td></tr>';
                   });
@@ -63,12 +48,32 @@
 
               //$('body').append(output);
               $('#tb1').html(output);
+            }});
+      });
+
+      $(document).on("click",".friend_add", function() {
+        $('.friend_add').each(function(index, item) {
+
+        });
+        var url = $('.friend_add').attr('onclick');
+        var friend_id = url.substring(26, url.length-1);
+        alert(friend_id);
+
+        $.ajax({
+          url: '/addFriend/' + url2,
+          type: 'get',
+          success: function(data) {
+            if(data.alert_message){
+              alert(data.alert_message);
             }
+            var socket = io().connect();
+            socket.emit('addFriend', data);
+          } 
         });
       });
 
-    });
-    </script>
+  });
+  </script>
   </head>
   <body>
     <center>
@@ -108,4 +113,5 @@
   <!-- Custom scripts for this template -->
   <script src="js/freelancer.min.js"></script>
  </body>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
 </html>

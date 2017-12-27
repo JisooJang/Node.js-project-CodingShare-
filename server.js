@@ -54,7 +54,9 @@ app.use(expressSession({    // 세션 객체 호출 시 반환되는 객체 전�
     maxAge: 1000 * 60 * 60 // 쿠키 유효기간 1시간
   }
 }));
-//io.use(sharedsession(expressSession));
+
+app.use(passport.initialize());   // 패스포트 초기화
+app.use(passport.session());  // 패스포트 로그인 세션 유지
 
 app.use(bodyParser.urlencoded({ extended: false }));    // body-parser를 사용해 application/x-www-form-urlencoded 파싱
 app.use(bodyParser.json());   // application/json 파싱
@@ -66,17 +68,16 @@ app.use(errorHandler);
 app.use(cookieParser());
 app.use(cors());
 
-app.use(passport.initialize());   // 패스포트 초기화
-app.use(passport.session());  // 패스포트 로그인 세션 유지
-
 passport.use('facebook', facebook(app, passport));
-passport.use('naver', naver(app, passport));
+passport.use('naver', naver.naver_callback(app, passport));
 
 passport.serializeUser(function(user, done) {   // 사용자 정보를 세션에 저장
-  done(null, user.ud);
+  console.log('serial ' + user);
+  done(null, user);
 });
 
-passport.deserializeUser(function(id, done) {   // 세션으로부터 사용자 정보 복원
+passport.deserializeUser(function(user, done) {   // 세션으로부터 사용자 정보 복원
+  console.log('deserial ' + user);
   done(null, user);
 });
 
@@ -134,9 +135,9 @@ router.route('/auth/naver').get(passport.authenticate('naver')
 );
 
 router.route('/auth/naver/callback').get(passport.authenticate('naver', {
-  successRedirect : '/',
-  failureRedirect : '/login',
-  session: false  // 추후 삭제할것. 세션 저장 필수
+  successRedirect : '/public/index2.html',
+  failureRedirect : '/',
+  session: true  // 추후 삭제할것. 세션 저장 필수
 }));
 
 router.route('/join').post(router_function.join);
@@ -146,7 +147,7 @@ router.route('/login').post(router_function.login);
 
 router.route('/logout').get(router_function.logout);
 
-router.route('/findPassword').get(router_function.findPassword);
+router.route('/findPassword').post(router_function.findPassword_before);
 
 // 그룹 조회
 router.route('/mygroup').get(router_function.mygroup);
@@ -169,7 +170,8 @@ router.route('/myRooms').get(router_function.myRooms);
 router.route('/likes/:room_id').get(router_function.likesRoom);
 
 // 1) 친구추가 버튼을 눌렀을 때 소켓에 알림 전송(상대방에세 친구요청 알림이 실시간으로 가도록)
-router.route('/addFriend/:id').get(router_function.addFriend);
+//router.route('/addFriend/:id').get(router_function.addFriend);
+router.route('/addFriend/:id').get(router_function.addFriend_accepted);
 
 // 2) 상대방이 친구 요청 알림 메시지를 받은 후 수락했을 때
 router.route('/addFriend/:id/accepted').get(router_function.addFriend_accepted);
@@ -183,8 +185,19 @@ router.route('/setImage').post(upload.array('photo', 1), router_function.setImag
 // 메인에서 관리자 contact버튼 클릭
 router.route('/contact_send').post(router_function.contact_send);
 
+router.route('/modify_room/:room_id').get(router_function.modifyRoom);
+
+router.route('/modify_room/submit/:room_id').post(router_function.modify_room_submit);
+
+router.route('/invite').post(router_function.inviteRooms);
+
+router.route('/findPassword/accept/:id').get(router_function.findPassword);
+
 // 메인페이지
 router.route('/').get(router_function.index);
+
+
+var login_mapping = {};
 
 io.on('connection', function(socket) {
   roomName = router_function.roomName;
@@ -199,6 +212,15 @@ io.on('connection', function(socket) {
   //console.log('client_info : ' + client_info.contents);
   socket.to(id).emit('get', client_info);
   console.log('client_info : ' + client_info.contents); 
+
+  socket.on('login', function(data) {
+    console.log(socket.id);
+    var user_id = data.id;
+    login_mapping[user_id] = socket.id;
+    socket.user_id = user_id;
+
+    console.log('접속한 클라이언트 수 : ' + Object.keys(login_mapping).length);
+  });
 
   socket.on("send", function(data) {    // 소켓에 "send" 이벤트 연결
     client_info = {
@@ -257,7 +279,7 @@ io.on('connection', function(socket) {
         user.shareRoom(database, room_id, function(err, docs) {
           if(err) { throw err; }
           if(docs && docs.length > 0) {
-            user.addParticipants(database, room_url, user_id, function(err, docs2) {
+            user.addParticipants(database, room_url, user_id, contents, function(err, docs2) {
               if(err) { throw err; }
               if(docs2) {
                 socket.emit({'add_result' : 'success'});

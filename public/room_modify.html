@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function() {
+            var room_id = sessionStorage.getItem('room_id');
+            $.ajax({
+                url: '/modify_room/' + room_id,
+                type: 'get',
+                success: function(data) {
+                    $('#title').val(data[0].room_title);
+                    $('#description').val(data[0].description);
+                    $(option).each(function(index, item) {
+                        if($(item).text() == data[0].code_language) {
+                            $(item).attr('selected', true);
+                        }
+                    });
+                }
+            });
+
+            //$('#form1').attr('action', '/modify_room/submit/' + room_id);
+            $('#form1').submit(function() {
+
+                $.ajax({
+                    url: '/modify_room/submit/' + room_id,
+                    type: 'post',
+                    data: {
+                        room_title: $('#title').val(),
+                        description: $('#description').val(),
+                        password: $('#password').val(),
+                        code_language: $('#language').val(),
+                        public: $('.public:checked').val()
+                    },
+                    success: function(data) {
+                        if(data.alert_message == 'success') {
+                            alert('방 정보를 성공적으로 수정하였습니다.');
+                            window.close();
+                        } else {
+                            alert('방 정보 수정에 실패하였습니다. 잠시 후 다시 시도해주세요.');
+                        }
+                    }
+
+                })
+            });
+
+        });
+    </script>
+</head>
+<body>
+        <form method="POST" id="form1" action="">
+                <div class="form-group">
+                  <label for="exampleInputEmail1"><b>Room Title</b></label>
+                  <input type="text" class="form-control" id="title" placeholder="Enter Room Title">
+                </div>
+                <div class="form-group">
+                        <label for="exampleTextarea"><b>Room Explanation</b></label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                        <small id="emailHelp" class="form-text text-muted">Explain your room about subject, values, purpose...etc simply.</small>
+                </div>
+                <div class="form-group">
+                  <label for="exampleInputPassword1"><b>Room Password</b></label>
+                  <input type="password" class="form-control" id="password" placeholder="Password">
+                  <small id="emailHelp" class="form-text text-muted">you surely need room password to modify room information. </small>
+                </div>
+                <div class="form-group">
+                  <label for="exampleSelect1"><b>Code Language</b></label>
+                  <select class="form-control" id="language">
+                    <option>C</option>
+                    <option>C++</option>
+                    <option>C#</option>
+                    <option>Java</option>
+                    <option>Python</option>
+                    <option>PHP</option>
+                    <option>Swift</option>
+                    <option>html</option>
+                    <option>others..</option>
+                  </select>
+                </div>
+                <fieldset class="form-group">
+                  <legend><b>Public / Private</b></legend>
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="radio" class="form-check-input public" name="optionsRadios" id="public1" value="true" checked>
+                      Public(Every users can use and view the room.)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                  <label class="form-check-label">
+                      <input type="radio" class="form-check-input public" name="optionsRadios" id="public2" value="false">
+                      Private(Groups can use and view only.)
+                    </label>
+                  </div>
+                </fieldset>
+                <button type="submit" id="submit" class="btn btn-primary">Modify</button>
+                <button type="button" id="delete" class="btn btn-primary" id="delete">Delete Room</button>
+              </form>
+</body>
+</html>

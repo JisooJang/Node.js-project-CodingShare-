@@ -183,14 +183,20 @@ $('.sign_in_form button').on('click',function(){
               'password' : $('.sign_in_form #inputPassword').val()
             },
             success:function(data){
+              var socket = io().connect(); //소켓 연결
+              var email = $('.sign_in_form #inputEmail').val();
+              socket.emit('login', {'id' : email});
+              
                 console.log(data);
                 if(data.alert_message == "로그인 성공") {
                   sessionStorage.setItem("user_id", user_id);
                   location.href='http://127.0.0.1:3500/public/index2.html';
                 } else if(data.alert_message == "로그인 실패") {
-                  location.href='http://127.0.0.1:3500/public/404.html';
+                  alert('로그인에 실패하였습니다. 아이디 및 비밀번호를 다시 확인해주세요.');
+                  location.href='http://127.0.0.1:3500/';
                 } else {
-                  location.href='http://127.0.0.1:3500/public/404.html';
+                  alert('로그인에 실패하였습니다. 아이디 및 비밀번호를 다시 확인해주세요.');
+                  location.href='http://127.0.0.1:3500/';
                 }
             }
         });
@@ -223,6 +229,10 @@ $('.sign_up_form button').on('click',function(){
         });
 
   return false;
+});
+
+$('#find').click(function(e) {
+  window.open("http://127.0.0.1:3500/public/findPw.html", "child", "width=400, height=200");
 });
 
 /***/ })

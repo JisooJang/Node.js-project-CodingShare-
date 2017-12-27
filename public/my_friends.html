@@ -7,24 +7,48 @@
             if(data.length == 0) {
                 alert('등록된 친구가 없습니다.');
             } else {
+                var html_append = '';
+                
+                for(var i=0 ; i<data.length ; i++) {
+                    if(i % 3 == 0) { html_append += '<tr>'; }
+                    html_append += '<td>'
+                    
+                    var friend_id = data[i].friend_id;
+                    var friend_name = data[i].friend_details[0].name;
+                    var friend_image = data[i].friend_details[0].profile_image;
+
+                    html_append += '<div class="card" style="width: 20rem;"><img class="card-img-top" src="' + friend_image + '" alt="Card image cap"><div class="card-block"><p class="card-text"> </p></div><ul class="list-group list-group-flush"><li align="center" class="list-group-item"><font color="#353535"><b>' + friend_id + '</b></font></li><li align="center" class="list-group-item"><font color="#353535"><b>' + friend_name + '</b></font></li></ul><div align="center" class="card-block"><a href="" id="search" class="card-link"><b>참여 방 확인</b></a><a href="#" class="card-link"><b>1:1대화</b></a></div>';
+                    html_append += '</td>'; 
+                    if(i % 3 == 1) { html_append += '</tr>'; }
+                }
+                $('#table1').html(html_append);
                 
             }
         }
     });
+
+    $('#search').on('click', function(e) {
+        alert('search');
+    });
+
 </script>
+    <table align="center" id="table1">
+    <!--
 <div class="card" style="width: 20rem;">
-        <img class="card-img-top" src="..." alt="Card image cap">
+        <img class="card-img-top" src="friend_image" alt="Card image cap">
         <div class="card-block">
           <h4 class="card-title">Card title</h4>
-          <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+          <p class="card-text">description</p>
         </div>
         <ul class="list-group list-group-flush">
-          <li class="list-group-item">Cras justo odio</li>
-          <li class="list-group-item">Dapibus ac facilisis in</li>
+          <li class="list-group-item">friend_id</li>
+          <li class="list-group-item">friend_name</li>
           <li class="list-group-item">Vestibulum at eros</li>
         </ul>
         <div class="card-block">
-          <a href="#" class="card-link">Card link</a>
-          <a href="#" class="card-link">Another link</a>
+          <a href="#" class="card-link">link1(참여방확인)</a>
+          <a href="#" class="card-link">link2(친구삭제)</a>
         </div>
+    -->
+</table>
 </div>

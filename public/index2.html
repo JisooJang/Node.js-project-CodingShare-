@@ -50,10 +50,10 @@
             success: function(data) {
               if(data.alert_message == "로그아웃 완료") {
                 alert('로그아웃이 완료되었습니다.');
-                location.href = "http://127.0.0.1:3500";
+                var home = "http://127.0.0.1:3500";
+                location.href='http://127.0.0.1:3500';
               }
               else {
-                alert(data.alert_message);
                 location.href = "http://127.0.0.1:3500";
               }
             }
@@ -75,6 +75,14 @@
             }
           });
         });
+
+        $('#alarm').click(function(e) {
+          var popupX = (window.screen.width / 2) - (200 / 2);
+          var popupY= (window.screen.height /2) - (300 / 2);
+          window.open('http://127.0.0.1:3500/public/alarm.html', 'alarm', 'width=400, height=400, left=' + popupX + ', top='+ popupY + ', screenX='+ popupX + ', screenY= '+ popupY);
+       
+        });
+
       });
     </script>
   </head>
@@ -103,10 +111,16 @@
             <li class="nav-item mx-0 mx-lg-1">
                 <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/public/mypage.html">MYPAGE</a>
             </li>
-            <li class="nav-item mx-0 mx-lg-1">
+            <li class="nav-item mx-0 mx-lg-1" id="login_insert">
                 <a class="nav-link py-3 px-0 px-lg-3 rounded" id="logout" href="/logout">LOGOUT</a>
             </li>
+            <li class="nav-item mx-0 mx-lg-1">
+              <a class="nav-link py-3 px-0 px-lg-3 rounded" href="">
+              <img src="image/alarm.png" id="alarm" height="50" />
+              </a>
+            </li>
             <div class="dropdown">
+              &nbsp;&nbsp;
                 <button class="btn btn-primary dropdown-toggle" id="friend_list" type="button" data-toggle="dropdown">친구 목록
                 <span class="caret"></span></button>
                 <ul class="dropdown-menu">
