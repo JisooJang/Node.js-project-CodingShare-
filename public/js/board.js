@@ -110,6 +110,19 @@ $('#invite').click(function(e) {
   }
 });
 
+$('#likes').click(function(e) {
+  var href = $(location).attr('href');
+  var room_id = href.substring(32, href.length);
+
+  $.ajax({
+    url: '/likes/' + room_id,
+    type: 'get',
+    success: function(data) {
+      alert(data);
+    }
+  });
+});
+
 $('#leave').click(function(e) {
 
 });

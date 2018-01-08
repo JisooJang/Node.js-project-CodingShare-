@@ -312,6 +312,7 @@ var setImage = function(req, res) {
             console.log('현재 파일 정보 : ' + originalname + ', ' + filename, + ', ' + mimetype + ', ' + size);
   
             if(database) {
+              if(files.length > 0) {
                 var img_url = "http://127.0.0.1:3500/uploads/" + filename;
                 // 세션에서 회원아이디를 가져온 후, 프로필이미지 url db에 저장 
                 var users = database.collection('users2');
@@ -332,6 +333,28 @@ var setImage = function(req, res) {
                         res.send("프로필 수정 오류");
                     }
                 });
+              } else {  // 프로필 사진 업로드가 안되었으면
+                var users = database.collection('users2');
+                users.update({ "id": req.session.user.id }, {$set: { "name": name, "password": pwd }}, function(err, docs) {
+                    if(err) { throw err; }
+                    if(docs) {
+                        console.log(docs);
+                        var user_id = req.session.user.id;
+                        var img_url = req.session.user.profile_image;
+                        req.session.user = {
+                          id: user_id,
+                          name: name,
+                          profile_image: img_url,
+                          authorized: true
+                        };
+                        res.redirect('/public/mypage.html');
+                    }
+                    else { 
+                        res.send("프로필 수정 오류");
+                    }
+                });
+
+              }
             }
   
         } catch(err) {

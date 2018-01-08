@@ -241,14 +241,33 @@ var likeRooms = function(database, user_id, room_id, callback) {
   var rooms = database.collection('rooms');
   likes.find({'id': user_id, 'room_id': room_id}).toArray(function(err, docs) {
     if(err) { throw err; }
-    if(docs) {
+    if(docs.length > 0) {
       console.log('이미 좋아요를 누름');
       modify_likes(database, room_id, 0);
-      callback({'like_result' : 'min'});
+
+      likes.remove({'id': user_id, 'room_id': room_id}, function(err, docs) {
+        console.log('좋아요 레코드삭제 완료');
+      });
+
+      callback(null, {'like_result' : 'min'});
     } else {
       console.log('좋아요 반영');
       modify_likes(database, room_id, 1);
-      callback({'like_result' : 'add'});
+
+      likes.insertMany([{'id': user_id, 'room_id': room_id}], function(err, result) {
+        if(err) {
+          callback(err, null);
+          return;
+        }
+        if(result.insertCount > 0) {
+          console.log('좋아요 체크 레코드 추가됨 : ' + result.insertedCount);
+        } else {
+          console.log('좋아요 체크 추가된 레코드 없음.');
+        }
+      });
+
+      callback(null, {'like_result' : 'add'});
+
     }
   });
 };
@@ -258,16 +277,25 @@ var modify_likes = function(database, room_id, key) {
   var likes_num = 0;
   console.log('modify_likes 호출됨');
   var rooms = database.collection('rooms');
-  rooms.find({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}).toArray(function(err, docs) {
+  rooms.find({'room_url': 'http://127.0.0.1:3500/shareRoom/' + room_id}).toArray(function(err, docs) {
     if(err) { throw err; }
     if(docs) {
-      likes_num = docs[0].likes;
+      likes_num = parseInt(docs[0].likes);
+      console.log('likes_num : ' + likes_num);
     }
   });
   if(key == 1) {
-    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}, {$set:{'likes': likes_num + 1}});
+    likes_num = likes_num + 1;
+    console.log('likes_num2 : ' + likes_num);
+    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom/' + room_id}, {$set:{'likes': likes_num}}, function(err,docs) {
+      if(err) { throw err; }
+    });
   } else {
-    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom' + room_id}, {$set:{'likes': likes_num - 1}});
+    likes_num = likes_num - 1;
+    console.log('likes_num2 : ' + likes_num);
+    rooms.update({'room_url': 'http://127.0.0.1:3500/shareRoom/' + room_id}, {$set:{'likes': likes_num}}, function(err, docs) {
+      if(err) { throw err; }
+    });
   }
 }
 
